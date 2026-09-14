@@ -130,10 +130,11 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // This is the only profile document friends can read. It intentionally
-    // excludes TMDB keys, private settings, notifications, and Friend Codes.
+    // This is the only profile document another signed-in user can read. It
+    // intentionally excludes TMDB keys, private settings, notifications, and
+    // Friend Codes. Exact reads support the Friends UI; listing is denied.
     match /publicProfiles/{userId} {
-      allow get: if signedIn() && (request.auth.uid == userId || areFriends(request.auth.uid, userId));
+      allow get: if signedIn();
       allow list: if false;
       allow create, update: if isOwner(userId) && validPublicProfile(request.resource.data);
       allow delete: if false;
