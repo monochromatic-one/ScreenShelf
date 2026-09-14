@@ -1,0 +1,196 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function validFriendCode(code) {
+      return code is string && code.matches('^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$');
+    }
+
+    function friendshipKey(uidA, uidB) {
+      return uidA < uidB ? uidA + '_' + uidB : uidB + '_' + uidA;
+    }
+
+    function areFriends(uidA, uidB) {
+      let key = friendshipKey(uidA, uidB);
+      return uidA != uidB && exists(/databases/$(database)/documents/friendships/$(key));
+    }
+
+    function validPublicProfile(data) {
+      return data.keys().hasOnly(['displayName', 'photoURL', 'updatedAt'])
+        && data.keys().hasAll(['displayName', 'photoURL', 'updatedAt'])
+        && data.displayName is string
+        && data.displayName.size() > 0
+        && data.displayName.size() <= 60
+        && data.photoURL is string
+        && data.photoURL.size() <= 900000
+        && data.updatedAt == request.time;
+    }
+
+    // A private users/{uid} document may be created before Friend Code setup
+    // completes, but once a code exists it cannot be removed or changed.
+    function validNewPrivateProfile(userId) {
+      return !('friendCode' in request.resource.data)
+        || (validFriendCode(request.resource.data.friendCode)
+          && existsAfter(/databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode))
+          && getAfter(/databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode)).data.uid == userId);
+    }
+
+    function validPrivateProfileUpdate(userId) {
+      return !('friendCode' in resource.data)
+        ? validNewPrivateProfile(userId)
+        : ('friendCode' in request.resource.data
+          && request.resource.data.friendCode == resource.data.friendCode);
+    }
+
+    function validFriendRequest(requestId) {
+      let targetUid = request.resource.data.toUid;
+      let oppositeRequestId = targetUid + '_' + request.auth.uid;
+      let pairKey = friendshipKey(request.auth.uid, targetUid);
+      return request.resource.data.keys().hasOnly([
+          'fromUid', 'toUid', 'fromDisplayName', 'fromPhotoURL', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'fromUid', 'toUid', 'fromDisplayName', 'fromPhotoURL', 'createdAt'
+        ])
+        && request.resource.data.fromUid == request.auth.uid
+        && targetUid is string
+        && targetUid != request.auth.uid
+        && requestId == request.auth.uid + '_' + targetUid
+        && request.resource.data.fromDisplayName is string
+        && request.resource.data.fromDisplayName.size() > 0
+        && request.resource.data.fromDisplayName.size() <= 60
+        && request.resource.data.fromPhotoURL is string
+        && request.resource.data.fromPhotoURL.size() <= 900000
+        && request.resource.data.createdAt == request.time
+        // Copy public fields into a pending request; do not expose users/{uid}.
+        && exists(/databases/$(database)/documents/publicProfiles/$(request.auth.uid))
+        && request.resource.data.fromDisplayName == get(/databases/$(database)/documents/publicProfiles/$(request.auth.uid)).data.displayName
+        && request.resource.data.fromPhotoURL == get(/databases/$(database)/documents/publicProfiles/$(request.auth.uid)).data.photoURL
+        && !exists(/databases/$(database)/documents/friendRequests/$(oppositeRequestId))
+        && !exists(/databases/$(database)/documents/friendships/$(pairKey));
+    }
+
+    function validFriendship(friendshipDoc) {
+      return request.resource.data.keys().hasOnly(['users', 'createdAt'])
+        && request.resource.data.keys().hasAll(['users', 'createdAt'])
+        && request.resource.data.users is list
+        && request.resource.data.users.size() == 2
+        && request.resource.data.users[0] is string
+        && request.resource.data.users[1] is string
+        && request.resource.data.users[0] < request.resource.data.users[1]
+        && friendshipDoc == request.resource.data.users[0] + '_' + request.resource.data.users[1]
+        && request.resource.data.createdAt == request.time;
+    }
+
+    // The recipient must delete the matching pending request in the same
+    // atomic transaction/batch that creates the friendship. Either request
+    // direction is supported even though the friendship UID order is fixed.
+    function acceptanceDeletesPendingRequest() {
+      let firstUid = request.resource.data.users[0];
+      let secondUid = request.resource.data.users[1];
+      let forwardId = firstUid + '_' + secondUid;
+      let reverseId = secondUid + '_' + firstUid;
+      return (
+          exists(/databases/$(database)/documents/friendRequests/$(forwardId))
+          && get(/databases/$(database)/documents/friendRequests/$(forwardId)).data.fromUid == firstUid
+          && get(/databases/$(database)/documents/friendRequests/$(forwardId)).data.toUid == secondUid
+          && request.auth.uid == secondUid
+          && !existsAfter(/databases/$(database)/documents/friendRequests/$(forwardId))
+        ) || (
+          exists(/databases/$(database)/documents/friendRequests/$(reverseId))
+          && get(/databases/$(database)/documents/friendRequests/$(reverseId)).data.fromUid == secondUid
+          && get(/databases/$(database)/documents/friendRequests/$(reverseId)).data.toUid == firstUid
+          && request.auth.uid == firstUid
+          && !existsAfter(/databases/$(database)/documents/friendRequests/$(reverseId))
+        );
+    }
+
+    // Friend codes are exact-document lookups only. Listing is deliberately
+    // denied to prevent directory-style discovery or enumeration.
+    match /friendCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && validFriendCode(code)
+        && request.resource.data.keys().hasOnly(['uid', 'createdAt'])
+        && request.resource.data.keys().hasAll(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        // A code is only claimed alongside the owner's immutable profile field.
+        && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.friendCode == code;
+      allow update, delete: if false;
+    }
+
+    // This is the only profile document friends can read. It intentionally
+    // excludes TMDB keys, private settings, notifications, and Friend Codes.
+    match /publicProfiles/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || areFriends(request.auth.uid, userId));
+      allow list: if false;
+      allow create, update: if isOwner(userId) && validPublicProfile(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /friendRequests/{requestId} {
+      // Allow a direct read of a missing deterministic request so a client
+      // transaction can safely check its absence. Existing requests remain
+      // visible only to their sender or recipient; collection scans stay gated.
+      allow get: if signedIn() && (resource == null
+        || request.auth.uid == resource.data.fromUid || request.auth.uid == resource.data.toUid);
+      allow list: if signedIn()
+        && (request.auth.uid == resource.data.fromUid || request.auth.uid == resource.data.toUid);
+      allow create: if signedIn() && validFriendRequest(requestId);
+      allow update: if false;
+      // Sender can cancel; recipient can reject or atomically accept.
+      allow delete: if signedIn()
+        && (request.auth.uid == resource.data.fromUid || request.auth.uid == resource.data.toUid);
+    }
+
+    match /friendships/{friendshipDoc} {
+      // Direct reads of a missing canonical friendship are needed by the
+      // request/accept transactions. They reveal no data; existing documents
+      // are still visible only to one of the two accepted friends.
+      allow get: if signedIn() && (resource == null || resource.data.users.hasAny([request.auth.uid]));
+      allow list: if signedIn() && resource.data.users.hasAny([request.auth.uid]);
+      allow create: if signedIn()
+        && validFriendship(friendshipDoc)
+        && acceptanceDeletesPendingRequest();
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.users.hasAny([request.auth.uid]);
+    }
+
+    match /users/{userId} {
+      // The owner alone can access their private profile/settings document.
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && validNewPrivateProfile(userId);
+      allow update: if isOwner(userId) && validPrivateProfileUpdate(userId);
+      allow delete: if false;
+
+      // Friends receive read-only access only after an accepted friendship
+      // exists. Pending requests grant no library access.
+      match /anime/{animeId} {
+        allow get, list: if signedIn() && (request.auth.uid == userId || areFriends(request.auth.uid, userId));
+        allow create, update, delete: if isOwner(userId);
+      }
+
+      match /series/{seriesId} {
+        allow get, list: if signedIn() && (request.auth.uid == userId || areFriends(request.auth.uid, userId));
+        allow create, update, delete: if isOwner(userId);
+      }
+
+      // Notifications remain private, including from accepted friends.
+      match /notifications/{notificationId} {
+        allow get, list, create, update, delete: if isOwner(userId);
+      }
+    }
+  }
+}

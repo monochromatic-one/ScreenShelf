@@ -16,6 +16,7 @@ ScreenShelf is designed to stay simple: track series at the season level, keep y
 - 🎬 Episode information for reference (no episode-by-episode tracking)
 - 🔤 Alphabetical library ordering
 - 🔔 In-app notifications for new seasons/episodes
+- 👥 Private Friends with permanent Friend Codes and read-only shared libraries
 - 📴 Local-first library with offline access
 - 🖼️ Cached artwork
 - 💾 Import/export backups
@@ -84,6 +85,26 @@ Then open:
 
 The existing library remains available offline, but TMDB-powered search and refresh require an internet connection.
 
+## Firestore security rules
+
+Friends requires the Firestore rules included in [`firestore.rules`](./firestore.rules). Deploy them to the same Firebase project used by the app before publishing this update:
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase deploy --only firestore:rules --project screenshelf
+```
+
+`firebase.json` already points the Firebase CLI at the rules file. The rules keep private `users/{uid}` profile documents and notifications owner-only, allow exact (not listable) Friend Code lookups, and grant accepted friends read-only access only to anime and series library documents.
+
+## Friends
+
+Open **Settings → Friends** to find your permanent eight-character Friend Code, send a request, manage pending requests, and remove friends. Friend Codes use uppercase letters and numbers without `0`, `O`, `1`, or `I`.
+
+A library becomes visible only after the recipient accepts a request. Friends can view each other's Series and Anime lists, statuses, season-complete marks, and ratings in a read-only view. They cannot see emails, TMDB API keys, private settings, or notifications.
+
+Friends requires an internet connection. Your personal library remains available through the existing offline cache.
+
 ## Statuses
 
 ### Anime
@@ -108,11 +129,11 @@ Statuses are controlled manually by the user. TMDB information does not automati
 
 ScreenShelf is **local-first**.
 
-Your library, statuses, watched seasons, settings, notifications, and cached data are stored locally in the browser on your device.
+Your library, statuses, watched seasons, settings, notifications, and cached data are stored in your authenticated ScreenShelf Firestore account, with Firestore's persistent browser cache supporting offline access.
 
-There is no ScreenShelf account or cloud-sync system.
+Your TMDB API key is entered through Settings and stored only in your private profile. It is never written into the source code and never included in exports.
 
-Your TMDB API key is entered through Settings and stored only on your device. It is never written into the source code and never included in exports.
+Friends use a separate minimal public profile document containing only a display name and profile picture. Accepted friends can read your Series and Anime library documents; pending requests and strangers cannot. Friends never receive access to your private profile document, TMDB API key, settings, or notifications.
 
 ## Backup
 

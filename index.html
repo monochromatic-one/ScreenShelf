@@ -344,6 +344,50 @@
   .app-shell.series-mode .main,
   .app-shell.anime-mode .main{ transition:background .2s ease; }
 
+  /* ---------- Friends ---------- */
+  .friends-entry{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; text-align:left; }
+  .friends-entry-copy{ min-width:0; }
+  .friends-entry-title{ font-size:14.5px; font-weight:700; }
+  .friends-entry-help{ margin-top:3px; color:var(--muted); font-size:12.5px; line-height:1.4; }
+  .friends-sheet-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 10px 14px; }
+  .friends-sheet-head .sheet-title{ padding:0; }
+  .friends-add-btn{ border:0; background:none; color:var(--accent); padding:4px 0; font:inherit; font-size:13px; font-weight:800; white-space:nowrap; }
+  .friend-code-box{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 10px 16px; padding:11px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; }
+  .friend-code-label{ color:var(--muted); font-size:12px; font-weight:700; }
+  .friend-code-value{ font-size:16px; font-weight:800; letter-spacing:.12em; }
+  .friend-code-copy{ border:0; border-radius:8px; padding:6px 8px; background:var(--surface); color:var(--accent); font:inherit; font-size:12px; font-weight:800; }
+  .friends-section-label{ display:block; padding:2px 10px 8px; color:var(--muted); font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+  .friends-empty{ padding:12px 10px 18px; color:var(--muted); font-size:13px; line-height:1.45; }
+  .friend-row{ display:flex; align-items:center; gap:10px; border-top:1px solid var(--border); padding:11px 10px; }
+  .friend-row-main{ display:flex; align-items:center; gap:10px; min-width:0; flex:1; border:0; padding:0; background:none; text-align:left; color:var(--text); }
+  .friend-row-main:only-child{ cursor:default; }
+  .friend-avatar{ width:35px; height:35px; flex:none; object-fit:cover; border-radius:50%; background:var(--surface-3); border:1px solid var(--border); }
+  .friend-avatar-fallback{ display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .friend-row-copy{ min-width:0; flex:1; }
+  .friend-row-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px; font-weight:700; }
+  .friend-row-note{ margin-top:2px; color:var(--muted); font-size:11.5px; }
+  .friend-row-actions{ display:flex; align-items:center; gap:6px; flex:none; }
+  .friend-mini-btn{ border:1px solid var(--border); border-radius:8px; padding:6px 8px; background:var(--surface); color:var(--text); font:inherit; font-size:11.5px; font-weight:800; }
+  .friend-mini-btn.accent{ border-color:var(--accent); background:var(--accent); color:var(--accent-text); }
+  .friend-mini-btn.danger{ color:var(--danger); }
+  .friend-add-form{ padding:0 10px 8px; }
+  .friend-code-input{ text-transform:uppercase; letter-spacing:.12em; font-weight:800; }
+  .friend-add-help{ color:var(--muted); font-size:12.5px; line-height:1.45; margin:0 0 12px; }
+  .friend-feedback{ min-height:20px; margin:10px 0 2px; font-size:12.5px; line-height:1.4; }
+  .friend-feedback.error{ color:var(--danger); }
+  .friend-feedback.success{ color:var(--accent); }
+  .friend-library-head{ align-items:center; justify-content:space-between; }
+  .friend-library-title{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .friend-library-tools{ display:flex; justify-content:flex-end; padding:0 4px 10px; }
+  .friend-library-note{ color:var(--muted); font-size:12px; text-align:center; padding:0 4px 13px; }
+  .friend-library-row .anime-title-wrap{ min-width:0; flex:1; }
+  .friend-library-row .anime-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .friend-rating{ flex:none; color:var(--muted); font-size:15px; }
+  .friend-readonly-note{ color:var(--muted); font-size:12px; text-align:center; padding:0 4px 13px; }
+  .season-head-readonly{ cursor:default; }
+  .friend-rating-pill{ display:inline-flex; align-items:center; gap:6px; align-self:center; padding:7px 12px; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--text); font-size:12.5px; font-weight:700; }
+  .app-shell.friend-view .topbar-actions{ visibility:hidden; pointer-events:none; }
+
 </style>
 
 <style id="screenshelf-brand-1-5x">
@@ -507,7 +551,12 @@ import {
   onSnapshot,
   setDoc,
   deleteDoc,
-  serverTimestamp
+  serverTimestamp,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  runTransaction
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 const firebaseConfig = {
   apiKey: "AIzaSyDcfuKP-nVjm6s6CMn-T4V_ck_cAtLnnf8",
@@ -741,6 +790,31 @@ const state = {
   previewTmdb: null,
   refreshing: false,
   sortBy: { anime: 'az', shows: 'az' },
+  friends: {
+    friendCode: '',
+    loading: false,
+    error: '',
+    sheetOpen: false,
+    mode: 'list',
+    addLoading: false,
+    addMessage: null,
+    incoming: [],
+    outgoing: [],
+    list: [],
+  },
+  friendLibrary: {
+    uid: null,
+    displayName: '',
+    photoURL: '',
+    anime: [],
+    series: [],
+    loading: false,
+    error: '',
+    activeTab: 'shows',
+    sortBy: { anime: 'az', shows: 'az' },
+    expandedStatus: null,
+    detailId: null,
+  },
 };
 
 function uid(){
@@ -761,9 +835,33 @@ let cloudUnsubSeries = null;
 let cloudUnsubNotifications = null;
 let hasTriggeredInitialRefresh = false;
 let deletingLibraryIds = new Set();
+let friendIdentityPromise = null;
+let friendIdentityUserId = null;
+
+const FRIEND_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const FRIEND_CODE_PATTERN = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
 
 function cloudCollectionName(mediaType){ return mediaType === 'show' ? 'series' : 'anime'; }
 function cloudDocId(tmdbId){ return String(tmdbId); }
+function friendRequestId(fromUid, toUid){ return String(fromUid) + '_' + String(toUid); }
+function friendshipId(uidA, uidB){ return [String(uidA), String(uidB)].sort().join('_'); }
+function isValidFriendCode(code){ return FRIEND_CODE_PATTERN.test(String(code || '')); }
+function generateFriendCode(){
+  const values = new Uint32Array(8);
+  crypto.getRandomValues(values);
+  return Array.from(values, value => FRIEND_CODE_CHARS[value % FRIEND_CODE_CHARS.length]).join('');
+}
+function publicDisplayName(){
+  const chosen = String(state.settings.displayName || '').trim();
+  const authName = cloudSyncUser && typeof cloudSyncUser.displayName === 'string' ? cloudSyncUser.displayName.trim() : '';
+  // Never derive a public name from an email address.
+  return (chosen || authName || 'ScreenShelf user').slice(0, 60);
+}
+function publicPhotoURL(){ return String(state.settings.photoURL || '').slice(0, 900000); }
+function friendAvatarMarkup(photoURL, name){
+  if (photoURL) return `<img class="friend-avatar" src="${escapeHtml(photoURL)}" alt="">`;
+  return `<span class="friend-avatar friend-avatar-fallback" aria-hidden="true">👤</span>`;
+}
 
 function localMillis(value){
   if (typeof value === 'number') return value;
@@ -856,15 +954,99 @@ async function cloudSaveProfile(fields){
   await setDoc(ref, { ...fields, updatedAt: serverTimestamp() }, { merge: true });
 }
 
+/* ---- Public profile: deliberately separate from private settings. ---- */
+async function cloudSavePublicProfile(){
+  if (!cloudSyncUser) return;
+  await setDoc(doc(firebaseDb, 'publicProfiles', cloudSyncUser.uid), {
+    displayName: publicDisplayName(),
+    photoURL: publicPhotoURL(),
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+/* ---- Permanent Friend Code + public profile bootstrap. ----
+   A transaction claims the code document and writes the immutable code on
+   the private owner profile together. The public profile contains only the
+   two fields friends are allowed to see. */
+async function ensureFriendIdentity(){
+  if (!cloudSyncUser) return '';
+  if (friendIdentityPromise && friendIdentityUserId === cloudSyncUser.uid) return friendIdentityPromise;
+
+  const currentUser = cloudSyncUser;
+  const profileRef = doc(firebaseDb, 'users', currentUser.uid);
+  const publicProfileRef = doc(firebaseDb, 'publicProfiles', currentUser.uid);
+
+  friendIdentityUserId = currentUser.uid;
+  friendIdentityPromise = (async () => {
+    let lastError = null;
+    for (let attempt = 0; attempt < 8; attempt++){
+      const candidate = generateFriendCode();
+      try {
+        const claimedCode = await runTransaction(firebaseDb, async transaction => {
+          const profileSnap = await transaction.get(profileRef);
+          const profile = profileSnap.exists() ? profileSnap.data() : {};
+          const existingCode = isValidFriendCode(profile.friendCode) ? profile.friendCode : '';
+          const code = existingCode || candidate;
+          const codeRef = doc(firebaseDb, 'friendCodes', code);
+          const [codeSnap, publicSnap] = await Promise.all([
+            transaction.get(codeRef),
+            transaction.get(publicProfileRef),
+          ]);
+
+          if (codeSnap.exists() && codeSnap.data().uid !== currentUser.uid){
+            if (existingCode) throw new Error('FRIEND_CODE_CONFLICT');
+            throw new Error('FRIEND_CODE_COLLISION');
+          }
+
+          // Preserve an existing code forever; otherwise claim this candidate.
+          if (!codeSnap.exists()){
+            transaction.set(codeRef, { uid: currentUser.uid, createdAt: serverTimestamp() });
+          }
+          if (!existingCode){
+            transaction.set(profileRef, { friendCode: code, updatedAt: serverTimestamp() }, { merge: true });
+          }
+          if (!publicSnap.exists()){
+            transaction.set(publicProfileRef, {
+              displayName: publicDisplayName(),
+              photoURL: publicPhotoURL(),
+              updatedAt: serverTimestamp(),
+            }, { merge: true });
+          }
+          return code;
+        });
+        if (cloudSyncUser && cloudSyncUser.uid === currentUser.uid) state.friends.friendCode = claimedCode;
+        return claimedCode;
+      } catch(error) {
+        lastError = error;
+        if (error && error.message === 'FRIEND_CODE_COLLISION') continue;
+        throw error;
+      }
+    }
+    throw lastError || new Error('Could not claim a Friend Code.');
+  })();
+
+  try {
+    return await friendIdentityPromise;
+  } finally {
+    if (friendIdentityUserId === currentUser.uid){
+      friendIdentityPromise = null;
+      friendIdentityUserId = null;
+    }
+  }
+}
+
 function applyProfileSnapshot(snap){
   if (snap.exists()){
     const data = snap.data();
     let changed = false;
+    let publicProfileChanged = false;
     if (typeof data.tmdbApiKey === 'string' && data.tmdbApiKey !== state.settings.apiKey){ state.settings.apiKey = data.tmdbApiKey; changed = true; }
     if (typeof data.theme === 'string' && data.theme !== state.settings.theme){ state.settings.theme = data.theme; changed = true; }
     if (typeof data.accent === 'string' && data.accent !== state.settings.accent){ state.settings.accent = data.accent; changed = true; }
-    if (typeof data.displayName === 'string' && data.displayName !== state.settings.displayName){ state.settings.displayName = data.displayName; changed = true; }
-    if (typeof data.photoURL === 'string' && data.photoURL !== state.settings.photoURL){ state.settings.photoURL = data.photoURL; changed = true; }
+    if (typeof data.displayName === 'string' && data.displayName !== state.settings.displayName){ state.settings.displayName = data.displayName; changed = true; publicProfileChanged = true; }
+    if (typeof data.photoURL === 'string' && data.photoURL !== state.settings.photoURL){ state.settings.photoURL = data.photoURL; changed = true; publicProfileChanged = true; }
+    if (isValidFriendCode(data.friendCode) && data.friendCode !== state.friends.friendCode){ state.friends.friendCode = data.friendCode; }
+    if (publicProfileChanged) cloudSavePublicProfile().catch(error => console.warn('Public profile sync failed:', error));
     if (changed){ applyTheme(); if (state.view === 'settings') render(); }
   }
   if (!hasTriggeredInitialRefresh && hasApiKey() && navigator.onLine){
@@ -879,7 +1061,7 @@ function applyNotificationsSnapshot(snapshot){
   snapshot.forEach(d => { const data = d.data(); items.push({ id: d.id, title: data.title, read: !!data.read, createdAt: localMillis(data.createdAt) }); });
   state.notifications = items.sort((a,b) => b.createdAt - a.createdAt);
   updateBellBadge();
-  if (document.getElementById('overlay').classList.contains('show')) openNotifications();
+  if (document.getElementById('overlay').classList.contains('show') && !friendIsOpen()) openNotifications();
 }
 async function cloudSaveNotification(n){
   if (!cloudSyncUser) return;
@@ -902,6 +1084,7 @@ function startCloudSync(user){
     snap => applyLibrarySnapshot(snap, 'series'), error => console.error('Series sync failed:', error));
   cloudUnsubNotifications = onSnapshot(collection(firebaseDb, 'users', user.uid, 'notifications'),
     snap => applyNotificationsSnapshot(snap), error => console.error('Notifications sync failed:', error));
+  ensureFriendIdentity().catch(error => console.error('Friend identity setup failed:', error));
 }
 function stopCloudSyncListeners(){
   if (cloudUnsubProfile) cloudUnsubProfile();
@@ -925,6 +1108,8 @@ function stopCloudSync(){
   state.editingProfileName = false;
   state.avatarUploading = false;
   state.avatarError = '';
+  state.friends = { friendCode:'', loading:false, error:'', sheetOpen:false, mode:'list', addLoading:false, addMessage:null, incoming:[], outgoing:[], list:[] };
+  state.friendLibrary = { uid:null, displayName:'', photoURL:'', anime:[], series:[], loading:false, error:'', activeTab:'shows', sortBy:{ anime:'az', shows:'az' }, expandedStatus:null, detailId:null };
   state.view = 'home';
   state.previewMode = false;
   state.detailId = null;
@@ -962,6 +1147,271 @@ function activeStatusMap(){ return state.activeTab === 'anime' ? STATUS_MAP : SH
 function saveActiveItem(a){ return state.activeTab === 'anime' ? saveAnime(a) : saveShow(a); }
 function saveActiveItemForType(a,type){ return type === 'show' ? saveShow(a) : saveAnime(a); }
 function saveNotification(n){ return cloudSaveNotification(n); }
+
+/* =========================================================
+   Friends — requests, public profiles, and read-only libraries
+========================================================= */
+function friendErrorMessage(error){
+  const code = error && error.message;
+  const messages = {
+    FRIEND_CODE_NOT_FOUND: 'No ScreenShelf user was found with that Friend Code.',
+    FRIEND_CODE_SELF: 'That is your own Friend Code.',
+    FRIENDS_ALREADY: 'You are already friends.',
+    REQUEST_OUTGOING: 'Your friend request is already pending.',
+    REQUEST_INCOMING: 'This person has already sent you a request. Accept it from Pending requests.',
+    FRIEND_CODE_INVALID: 'Enter a valid 8-character Friend Code.',
+    FRIENDS_OFFLINE: 'Friends needs an internet connection.',
+    REQUEST_NOT_FOUND: 'That friend request is no longer available.',
+    REQUEST_NOT_FOR_YOU: 'Only the recipient can accept this friend request.',
+    FRIEND_CODE_CONFLICT: 'Your Friend Code could not be verified. Please try again later.',
+  };
+  return messages[code] || 'That action could not be completed. Please try again.';
+}
+
+function friendIsOpen(){ return !!state.friends.sheetOpen; }
+
+async function loadFriendsData(){
+  if (!cloudSyncUser) return;
+  state.friends.loading = true;
+  state.friends.error = '';
+  if (friendIsOpen()) renderFriendsSheet();
+
+  try {
+    if (!navigator.onLine) throw new Error('FRIENDS_OFFLINE');
+    await ensureFriendIdentity();
+    const currentUid = cloudSyncUser.uid;
+    const friendshipsRef = collection(firebaseDb, 'friendships');
+    const incomingRef = collection(firebaseDb, 'friendRequests');
+    const [incomingSnap, outgoingSnap, friendshipSnap] = await Promise.all([
+      getDocs(query(incomingRef, where('toUid', '==', currentUid))),
+      getDocs(query(incomingRef, where('fromUid', '==', currentUid))),
+      getDocs(query(friendshipsRef, where('users', 'array-contains', currentUid))),
+    ]);
+
+    state.friends.incoming = incomingSnap.docs.map(snapshot => {
+      const data = snapshot.data();
+      return {
+        id: snapshot.id,
+        fromUid: String(data.fromUid || ''),
+        toUid: String(data.toUid || ''),
+        displayName: String(data.fromDisplayName || 'ScreenShelf user'),
+        photoURL: String(data.fromPhotoURL || ''),
+        createdAt: localMillis(data.createdAt),
+      };
+    }).filter(request => request.fromUid && request.toUid === currentUid);
+
+    state.friends.outgoing = outgoingSnap.docs.map(snapshot => {
+      const data = snapshot.data();
+      return {
+        id: snapshot.id,
+        fromUid: String(data.fromUid || ''),
+        toUid: String(data.toUid || ''),
+        createdAt: localMillis(data.createdAt),
+      };
+    }).filter(request => request.toUid && request.fromUid === currentUid);
+
+    const friendUids = friendshipSnap.docs.map(snapshot => {
+      const users = snapshot.data().users;
+      return Array.isArray(users) ? users.find(uid => uid !== currentUid) : '';
+    }).filter(Boolean);
+    const profiles = await Promise.all(friendUids.map(uid => getDoc(doc(firebaseDb, 'publicProfiles', uid))));
+    state.friends.list = friendUids.map((uid, index) => {
+      const profile = profiles[index];
+      const data = profile.exists() ? profile.data() : {};
+      return {
+        uid,
+        displayName: String(data.displayName || 'Deleted ScreenShelf user'),
+        photoURL: String(data.photoURL || ''),
+      };
+    }).sort((a, b) => a.displayName.localeCompare(b.displayName));
+  } catch(error) {
+    console.warn('Could not load Friends:', error);
+    state.friends.error = friendErrorMessage(error);
+  } finally {
+    state.friends.loading = false;
+    if (friendIsOpen()) renderFriendsSheet();
+  }
+}
+
+async function sendFriendRequest(rawCode){
+  if (!cloudSyncUser) return;
+  const code = String(rawCode || '').trim().toUpperCase();
+  if (!isValidFriendCode(code)) throw new Error('FRIEND_CODE_INVALID');
+  if (!navigator.onLine) throw new Error('FRIENDS_OFFLINE');
+
+  await ensureFriendIdentity();
+  const currentUid = cloudSyncUser.uid;
+  const codeSnap = await getDoc(doc(firebaseDb, 'friendCodes', code));
+  if (!codeSnap.exists() || !codeSnap.data().uid) throw new Error('FRIEND_CODE_NOT_FOUND');
+  const targetUid = String(codeSnap.data().uid);
+  if (targetUid === currentUid) throw new Error('FRIEND_CODE_SELF');
+
+  await runTransaction(firebaseDb, async transaction => {
+    const requestRef = doc(firebaseDb, 'friendRequests', friendRequestId(currentUid, targetUid));
+    const oppositeRequestRef = doc(firebaseDb, 'friendRequests', friendRequestId(targetUid, currentUid));
+    const friendshipRef = doc(firebaseDb, 'friendships', friendshipId(currentUid, targetUid));
+    const ownPublicProfileRef = doc(firebaseDb, 'publicProfiles', currentUid);
+    const [friendshipSnap, requestSnap, oppositeRequestSnap, publicProfileSnap] = await Promise.all([
+      transaction.get(friendshipRef),
+      transaction.get(requestRef),
+      transaction.get(oppositeRequestRef),
+      transaction.get(ownPublicProfileRef),
+    ]);
+
+    if (friendshipSnap.exists()) throw new Error('FRIENDS_ALREADY');
+    if (requestSnap.exists()) throw new Error('REQUEST_OUTGOING');
+    if (oppositeRequestSnap.exists()) throw new Error('REQUEST_INCOMING');
+    if (!publicProfileSnap.exists()) throw new Error('FRIEND_PROFILE_UNAVAILABLE');
+
+    const profile = publicProfileSnap.data();
+    transaction.set(requestRef, {
+      fromUid: currentUid,
+      toUid: targetUid,
+      fromDisplayName: String(profile.displayName || 'ScreenShelf user').slice(0, 60),
+      fromPhotoURL: String(profile.photoURL || '').slice(0, 900000),
+      createdAt: serverTimestamp(),
+    });
+  });
+}
+
+async function submitFriendCode(){
+  const input = document.getElementById('friend-code-input');
+  const code = input ? input.value : '';
+  state.friends.addLoading = true;
+  state.friends.addMessage = null;
+  renderFriendsSheet();
+  try {
+    await sendFriendRequest(code);
+    state.friends.addMessage = { type:'success', text:'Friend request sent.' };
+    await loadFriendsData();
+  } catch(error) {
+    state.friends.addMessage = { type:'error', text:friendErrorMessage(error) };
+  } finally {
+    state.friends.addLoading = false;
+    if (friendIsOpen()) renderFriendsSheet();
+  }
+}
+
+async function acceptFriendRequest(requestId){
+  if (!cloudSyncUser) return;
+  try {
+    await runTransaction(firebaseDb, async transaction => {
+      const requestRef = doc(firebaseDb, 'friendRequests', requestId);
+      const requestSnap = await transaction.get(requestRef);
+      if (!requestSnap.exists()) throw new Error('REQUEST_NOT_FOUND');
+      const request = requestSnap.data();
+      const fromUid = String(request.fromUid || '');
+      const toUid = String(request.toUid || '');
+      if (toUid !== cloudSyncUser.uid) throw new Error('REQUEST_NOT_FOR_YOU');
+      if (!fromUid || requestId !== friendRequestId(fromUid, toUid)) throw new Error('REQUEST_NOT_FOUND');
+
+      const users = [fromUid, toUid].sort();
+      const friendshipRef = doc(firebaseDb, 'friendships', friendshipId(fromUid, toUid));
+      const friendshipSnap = await transaction.get(friendshipRef);
+      if (friendshipSnap.exists()) throw new Error('FRIENDS_ALREADY');
+
+      transaction.set(friendshipRef, { users, createdAt: serverTimestamp() });
+      transaction.delete(requestRef);
+    });
+    showToast('Friend request accepted.');
+  } catch(error) {
+    showToast(friendErrorMessage(error));
+  }
+  await loadFriendsData();
+}
+
+async function rejectFriendRequest(requestId){
+  try {
+    await deleteDoc(doc(firebaseDb, 'friendRequests', requestId));
+    showToast('Friend request declined.');
+  } catch(error) {
+    showToast(friendErrorMessage(error));
+  }
+  await loadFriendsData();
+}
+
+async function cancelFriendRequest(requestId){
+  try {
+    await deleteDoc(doc(firebaseDb, 'friendRequests', requestId));
+    showToast('Friend request cancelled.');
+  } catch(error) {
+    showToast(friendErrorMessage(error));
+  }
+  await loadFriendsData();
+}
+
+async function removeFriend(friendUid){
+  if (!cloudSyncUser) return;
+  const friend = state.friends.list.find(item => item.uid === friendUid);
+  if (!window.confirm(`Remove ${friend ? friend.displayName : 'this friend'}?`)) return;
+  try {
+    await deleteDoc(doc(firebaseDb, 'friendships', friendshipId(cloudSyncUser.uid, friendUid)));
+    showToast('Friend removed.');
+  } catch(error) {
+    showToast(friendErrorMessage(error));
+  }
+  await loadFriendsData();
+}
+
+async function copyFriendCode(){
+  const code = state.friends.friendCode;
+  if (!code) return;
+  try {
+    await navigator.clipboard.writeText(code);
+    showToast('Friend Code copied.');
+  } catch(error) {
+    const textarea = document.createElement('textarea');
+    textarea.value = code;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+    showToast('Friend Code copied.');
+  }
+}
+
+async function loadFriendLibrary(friendUid){
+  if (!cloudSyncUser) return;
+  const knownFriend = state.friends.list.find(friend => friend.uid === friendUid);
+  state.friendLibrary = {
+    uid: friendUid,
+    displayName: knownFriend ? knownFriend.displayName : 'Friend',
+    photoURL: knownFriend ? knownFriend.photoURL : '',
+    anime: [],
+    series: [],
+    loading: true,
+    error: '',
+    activeTab: 'shows',
+    sortBy: { anime:'az', shows:'az' },
+    expandedStatus: null,
+    detailId: null,
+  };
+  state.view = 'friendLibrary';
+  render();
+
+  try {
+    if (!navigator.onLine) throw new Error('FRIENDS_OFFLINE');
+    const [animeSnap, seriesSnap] = await Promise.all([
+      getDocs(collection(firebaseDb, 'users', friendUid, 'anime')),
+      getDocs(collection(firebaseDb, 'users', friendUid, 'series')),
+    ]);
+    state.friendLibrary.anime = animeSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'anime', snapshot.data().tmdbId || snapshot.id));
+    state.friendLibrary.series = seriesSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'show', snapshot.data().tmdbId || snapshot.id));
+  } catch(error) {
+    console.warn('Could not load friend library:', error);
+    state.friendLibrary.error = 'This library is unavailable. You may no longer be friends, or the account may no longer exist.';
+  } finally {
+    state.friendLibrary.loading = false;
+    if (state.view === 'friendLibrary' || state.view === 'friendDetail') render();
+  }
+}
+
+function openFriendLibrary(friendUid){
+  closeSheet();
+  loadFriendLibrary(friendUid);
+}
 
 /* =========================================================
    Theme
@@ -1056,7 +1506,10 @@ function openSheet(html){
   const ov = document.getElementById('overlay');
   ov.classList.add('show');
 }
-function closeSheet(){ document.getElementById('overlay').classList.remove('show'); }
+function closeSheet(){
+  document.getElementById('overlay').classList.remove('show');
+  state.friends.sheetOpen = false;
+}
 document.getElementById('overlay').addEventListener('click', (e)=>{ if (e.target.id==='overlay') closeSheet(); });
 
 /* =========================================================
@@ -1069,12 +1522,15 @@ function render(){
     search: renderSearch,
     detail: renderDetail,
     settings: renderSettings,
+    friendLibrary: renderFriendLibrary,
+    friendDetail: renderFriendDetail,
   }[state.view] || renderHome)();
   wireViewEvents();
   main.classList.toggle('main-flex-fill', state.view === 'home');
   const appShell = document.getElementById('app-shell');
   appShell.classList.toggle('series-mode', state.view === 'home' && state.activeTab === 'shows');
   appShell.classList.toggle('anime-mode', state.view === 'home' && state.activeTab === 'anime');
+  appShell.classList.toggle('friend-view', state.view === 'friendLibrary' || state.view === 'friendDetail');
   updateBellBadge();
 }
 
@@ -1286,6 +1742,16 @@ function renderSettings(){
     <div class="divider"></div>
 
     <div class="field">
+      <label class="field-label">Friends</label>
+      <button class="btn btn-ghost btn-block friends-entry" id="open-friends-btn">
+        <span class="friends-entry-copy"><span class="friends-entry-title">Friends</span><span class="friends-entry-help">Share your library with people you trust.</span></span>
+        <span aria-hidden="true">›</span>
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
       <label class="field-label">TMDB API key</label>
       <input class="field-input" id="api-key-input" type="text" placeholder="Paste your TMDB API key" value="${escapeHtml(state.settings.apiKey)}">
       <div class="field-help">Used only to talk to TMDB from this device. It's never included in exports.</div>
@@ -1330,6 +1796,176 @@ function renderSettings(){
       <button class="btn btn-danger btn-block" id="sign-out-btn">Sign out</button>
     </div>
   `;
+}
+
+/* =========================================================
+   Friends UI
+========================================================= */
+function friendFeedbackMarkup(){
+  const feedback = state.friends.addMessage;
+  return feedback ? `<div class="friend-feedback ${feedback.type}">${escapeHtml(feedback.text)}</div>` : '<div class="friend-feedback"></div>';
+}
+
+function friendRequestRow(request){
+  return `<div class="friend-row">
+    ${friendAvatarMarkup(request.photoURL, request.displayName)}
+    <div class="friend-row-copy"><div class="friend-row-name">${escapeHtml(request.displayName)}</div><div class="friend-row-note">Wants to be friends</div></div>
+    <div class="friend-row-actions">
+      <button class="friend-mini-btn accent" data-accept-friend-request="${escapeHtml(request.id)}">Accept</button>
+      <button class="friend-mini-btn danger" data-reject-friend-request="${escapeHtml(request.id)}">Reject</button>
+    </div>
+  </div>`;
+}
+
+function outgoingRequestRow(request){
+  return `<div class="friend-row">
+    <span class="friend-avatar friend-avatar-fallback" aria-hidden="true">⏳</span>
+    <div class="friend-row-copy"><div class="friend-row-name">Friend request pending</div><div class="friend-row-note">Waiting for their response</div></div>
+    <div class="friend-row-actions"><button class="friend-mini-btn danger" data-cancel-friend-request="${escapeHtml(request.id)}">Cancel</button></div>
+  </div>`;
+}
+
+function friendListRow(friend){
+  return `<div class="friend-row">
+    <button class="friend-row-main" data-open-friend-library="${escapeHtml(friend.uid)}" aria-label="Open ${escapeHtml(friend.displayName)}'s library">
+      ${friendAvatarMarkup(friend.photoURL, friend.displayName)}
+      <div class="friend-row-copy"><div class="friend-row-name">${escapeHtml(friend.displayName)}</div><div class="friend-row-note">View library</div></div>
+    </button>
+    <div class="friend-row-actions"><button class="friend-mini-btn danger" data-remove-friend="${escapeHtml(friend.uid)}">Remove</button></div>
+  </div>`;
+}
+
+function friendsListSheetMarkup(){
+  const friends = state.friends;
+  const incoming = friends.incoming.length ? friends.incoming.map(friendRequestRow).join('') : '';
+  const outgoing = friends.outgoing.length ? friends.outgoing.map(outgoingRequestRow).join('') : '';
+  const pending = incoming || outgoing
+    ? incoming + outgoing
+    : `<div class="friends-empty">No pending friend requests.</div>`;
+  const list = friends.list.length
+    ? friends.list.map(friendListRow).join('')
+    : `<div class="friends-empty">No friends yet. Share your Friend Code to get started.</div>`;
+  const code = friends.friendCode || '••••••••';
+
+  return `
+    <div class="sheet-grip"></div>
+    <div class="friends-sheet-head"><div class="sheet-title">Friends</div><button class="friends-add-btn" data-open-add-friend>+ Add Friend</button></div>
+    <div class="friend-code-box"><div><div class="friend-code-label">YOUR FRIEND CODE</div><div class="friend-code-value">${escapeHtml(code)}</div></div><button class="friend-code-copy" data-copy-friend-code ${friends.friendCode ? '' : 'disabled'}>Copy</button></div>
+    ${friends.error ? `<div class="friends-empty">${escapeHtml(friends.error)}</div>` : ''}
+    ${friends.loading ? `<div class="inline-loading" style="padding:8px 10px 14px;"><span class="spinner">🌀</span> Refreshing Friends…</div>` : ''}
+    <span class="friends-section-label">Pending requests</span>
+    <div class="friends-list">${pending}</div>
+    <span class="friends-section-label">Friends</span>
+    <div class="friends-list">${list}</div>`;
+}
+
+function addFriendSheetMarkup(){
+  const busy = state.friends.addLoading;
+  return `
+    <div class="sheet-grip"></div>
+    <div class="friends-sheet-head"><div class="sheet-title">Add Friend</div><button class="friends-add-btn" data-back-to-friends>← Friends</button></div>
+    <div class="friend-add-form">
+      <div class="friend-add-help">Enter a Friend Code to send a private library-sharing request.</div>
+      <label class="field-label" for="friend-code-input">Friend Code</label>
+      <input class="field-input friend-code-input" id="friend-code-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" maxlength="8" placeholder="ABCD2345" aria-describedby="friend-code-feedback" ${busy ? 'disabled' : ''}>
+      <button class="btn btn-accent btn-block" data-submit-friend-code style="margin-top:12px;" ${busy ? 'disabled' : ''}>${busy ? 'Adding…' : 'Add Friend'}</button>
+      <div id="friend-code-feedback">${friendFeedbackMarkup()}</div>
+    </div>`;
+}
+
+function renderFriendsSheet(){
+  if (!friendIsOpen()) return;
+  openSheet(state.friends.mode === 'add' ? addFriendSheetMarkup() : friendsListSheetMarkup());
+  const input = document.getElementById('friend-code-input');
+  if (input){
+    input.addEventListener('input', () => { input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8); });
+    input.addEventListener('keydown', event => { if (event.key === 'Enter') submitFriendCode(); });
+    if (!state.friends.addLoading) setTimeout(() => input.focus(), 0);
+  }
+}
+
+async function openFriendsSheet(){
+  state.friends.sheetOpen = true;
+  state.friends.mode = 'list';
+  state.friends.addMessage = null;
+  renderFriendsSheet();
+  await loadFriendsData();
+}
+
+function openAddFriendSheet(){
+  state.friends.mode = 'add';
+  state.friends.addMessage = null;
+  renderFriendsSheet();
+}
+
+function backToFriendsSheet(){
+  state.friends.mode = 'list';
+  state.friends.addMessage = null;
+  renderFriendsSheet();
+}
+
+function friendLibrarySortKey(){
+  return state.friendLibrary.activeTab === 'anime' ? state.friendLibrary.sortBy.anime : state.friendLibrary.sortBy.shows;
+}
+function sortFriendItems(items){
+  const mode = friendLibrarySortKey();
+  const sorted = items.slice();
+  if (mode === 'added') sorted.sort((x, y) => (y.addedAt || 0) - (x.addedAt || 0));
+  else if (mode === 'updated') sorted.sort((x, y) => (y.updatedAt || 0) - (x.updatedAt || 0));
+  else sorted.sort((x, y) => x.title.localeCompare(y.title));
+  return sorted;
+}
+function friendActiveLibrary(){ return state.friendLibrary.activeTab === 'anime' ? state.friendLibrary.anime : state.friendLibrary.series; }
+function friendActiveStatuses(){ return state.friendLibrary.activeTab === 'anime' ? STATUSES : SHOW_STATUSES; }
+function friendActiveStatusMap(){ return state.friendLibrary.activeTab === 'anime' ? STATUS_MAP : SHOW_STATUS_MAP; }
+
+function renderFriendLibrary(){
+  const friend = state.friendLibrary;
+  const name = friend.displayName || 'Friend';
+  const head = `<div class="view-head friend-library-head"><button class="back-btn" data-go="settings">← Back</button><span class="view-title friend-library-title">${escapeHtml(name)}’s library</span></div>`;
+  if (friend.loading) return head + `<div class="loading-block"><div class="spinner">🌀</div><div>Loading ${escapeHtml(name)}’s library…</div></div>`;
+  if (friend.error) return head + `<div class="empty-block"><div class="empty-emoji">🔒</div><div class="empty-title">Library unavailable</div><div class="empty-text">${escapeHtml(friend.error)}</div><button class="btn btn-ghost" data-refresh-friend-library>Try again</button></div>`;
+
+  const tabs = `<div class="media-tabs" role="tablist">
+    <button class="media-tab ${friend.activeTab==='shows'?'active':''}" data-friend-media-tab="shows">𝕊𝕖𝕣𝕚𝕖𝕤</button>
+    <button class="media-tab ${friend.activeTab==='anime'?'active':''}" data-friend-media-tab="anime">𝔸𝕟𝕚𝕞𝕖</button>
+  </div>`;
+  const sortRow = `<div class="sort-row">Sort:
+    <select id="friend-sort-select" aria-label="Sort friend library">${SORT_OPTIONS.map(option => `<option value="${option.key}" ${friendLibrarySortKey()===option.key?'selected':''}>${option.label}</option>`).join('')}</select>
+  </div>`;
+  const library = friendActiveLibrary();
+  const sections = friendActiveStatuses().map(status => {
+    const items = sortFriendItems(library.filter(item => item.status === status.key));
+    const open = friend.expandedStatus === status.key;
+    const rows = items.length ? items.map(item => {
+      const rating = item.rating && RATING_MAP[item.rating] ? RATINGS.find(value => value.key === item.rating) : null;
+      return `<button class="anime-row friend-library-row" data-open-friend-detail="${escapeHtml(item.id)}">
+        <img class="poster-thumb" src="${posterSrc(item.poster)}" data-poster-path="${item.poster||''}" alt="">
+        <span class="anime-title-wrap"><span class="anime-title">${escapeHtml(item.title)}</span></span>
+        <span class="friend-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : '❓'}</span>
+      </button>`;
+    }).join('') : `<div class="status-empty">${escapeHtml(EMPTY_STATUS_MESSAGES[status.key] || 'Nothing here yet.')}</div>`;
+    return `<div class="status-section status-${status.key}"><button class="status-header" aria-expanded="${open}" data-toggle-friend-status="${status.key}">
+      <span class="status-dot"></span><span>${status.label}</span><span class="status-emoji">${status.emoji}</span><span class="status-count">•${items.length}</span><span class="status-caret">›</span>
+    </button><div class="status-list ${open?'open':''}"><div class="status-list-inner">${rows}</div></div></div>`;
+  }).join('');
+  return head + `<div class="friend-library-tools"><button class="btn btn-ghost btn-sm" data-refresh-friend-library>↻ Refresh</button></div><div class="friend-library-note">Read-only library</div>` + tabs + sortRow + sections;
+}
+
+function renderFriendDetail(){
+  const friend = state.friendLibrary;
+  const item = friendActiveLibrary().find(value => value.id === friend.detailId);
+  if (!item) return `<div class="view-head"><button class="back-btn" data-go="friend-library">← Back</button></div><div class="empty-block"><div class="empty-title">Not found</div></div>`;
+  const status = friendActiveStatusMap()[item.status] || friendActiveStatusMap().planned;
+  const rating = item.rating && RATING_MAP[item.rating] ? RATING_MAP[item.rating] : null;
+  const seasons = item.seasons || [];
+  const totalEpisodes = seasons.reduce((count, season) => count + (season.episodeCount || 0), 0);
+  const seasonRows = seasons.length ? seasons.map(season => `<div class="season-row"><div class="season-head season-head-readonly"><span class="season-check ${season.watched?'checked':''}">${season.watched?'✓':''}</span><span class="season-name">${escapeHtml(season.name)} <span style="color:var(--muted); font-weight:500;">· ${season.episodeCount} ep</span></span></div></div>`).join('') : `<div class="status-empty">No season data from TMDB.</div>`;
+  return `<div class="view-head"><button class="back-btn" data-go="friend-library">← Back</button></div>
+    <div class="detail-hero"><h1 class="detail-title">${escapeHtml(item.title)}</h1><div class="detail-poster-wrap"><img class="detail-poster" src="${posterSrc(item.poster)}" data-poster-path="${item.poster||''}" alt=""></div>
+    <div class="detail-stats"><b>${seasons.length}</b>&nbsp;seasons&nbsp;&nbsp;·&nbsp;&nbsp;<b>${totalEpisodes}</b>&nbsp;episodes</div></div>
+    <div class="detail-actions"><div class="status-pill status-${item.status}"><span class="status-dot"></span>${status.label} ${status.emoji}</div><div class="friend-rating-pill">Rating: ${rating ? `${rating.emoji} ${escapeHtml(rating.label)}` : '❓ Not rated'}</div></div>
+    <div class="friend-readonly-note">Read-only library</div><div class="section-label">Seasons</div><div id="season-list">${seasonRows}</div>`;
 }
 
 /* =========================================================
@@ -1560,6 +2196,7 @@ async function saveNameEdit(){
   render();
   try {
     await cloudSaveProfile({ displayName: val });
+    await cloudSavePublicProfile();
   } catch(e){
     console.error('Could not save display name:', e);
     showToast('Could not save name.');
@@ -1606,6 +2243,7 @@ async function onAvatarFileSelected(file){
     }
     state.settings.photoURL = dataUrl;
     await cloudSaveProfile({ photoURL: dataUrl });
+    await cloudSavePublicProfile();
     showToast('Profile picture updated.');
   } catch(e){
     console.error('Avatar processing failed:', e);
@@ -1847,9 +2485,38 @@ function wireViewEvents(){
     render();
   });
 
+  main.querySelectorAll('[data-friend-media-tab]').forEach(el => el.addEventListener('click', () => {
+    state.friendLibrary.activeTab = el.getAttribute('data-friend-media-tab');
+    state.friendLibrary.expandedStatus = null;
+    state.friendLibrary.detailId = null;
+    render();
+  }));
+  const friendSortSelect = document.getElementById('friend-sort-select');
+  if (friendSortSelect) friendSortSelect.addEventListener('change', () => {
+    const key = state.friendLibrary.activeTab === 'anime' ? 'anime' : 'shows';
+    state.friendLibrary.sortBy[key] = friendSortSelect.value;
+    render();
+  });
+  main.querySelectorAll('[data-toggle-friend-status]').forEach(el => el.addEventListener('click', () => {
+    const key = el.getAttribute('data-toggle-friend-status');
+    state.friendLibrary.expandedStatus = state.friendLibrary.expandedStatus === key ? null : key;
+    render();
+  }));
+  main.querySelectorAll('[data-open-friend-detail]').forEach(el => el.addEventListener('click', () => {
+    state.friendLibrary.detailId = el.getAttribute('data-open-friend-detail');
+    state.view = 'friendDetail';
+    render();
+  }));
+  main.querySelectorAll('[data-refresh-friend-library]').forEach(el => el.addEventListener('click', () => {
+    if (state.friendLibrary.uid) loadFriendLibrary(state.friendLibrary.uid);
+  }));
+
   main.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', () => {
     const to = el.getAttribute('data-go');
-    if (to === 'home') goHome(); else if (to === 'search') goSearch(); else if (to === 'settings') goSettings();
+    if (to === 'home') goHome();
+    else if (to === 'search') goSearch();
+    else if (to === 'settings') goSettings();
+    else if (to === 'friend-library') { state.view = 'friendLibrary'; render(); }
   }));
   const emptySearchBtn = document.getElementById('empty-search-btn');
   if (emptySearchBtn) emptySearchBtn.addEventListener('click', goSearch);
@@ -1918,11 +2585,32 @@ function wireViewEvents(){
     importBtn.addEventListener('click', () => importFile.click());
     importFile.addEventListener('change', () => { if (importFile.files[0]) importLibrary(importFile.files[0]); importFile.value=''; });
   }
+  const openFriendsBtn = document.getElementById('open-friends-btn');
+  if (openFriendsBtn) openFriendsBtn.addEventListener('click', openFriendsSheet);
   const signOutBtn = document.getElementById('sign-out-btn');
   if (signOutBtn) signOutBtn.addEventListener('click', signOutUser);
 }
 
 document.getElementById('sheet').addEventListener('click', (e) => {
+  const openAddFriend = e.target.closest('[data-open-add-friend]');
+  if (openAddFriend) return openAddFriendSheet();
+  const backToFriends = e.target.closest('[data-back-to-friends]');
+  if (backToFriends) return backToFriendsSheet();
+  const submitCode = e.target.closest('[data-submit-friend-code]');
+  if (submitCode) return submitFriendCode();
+  const copyCode = e.target.closest('[data-copy-friend-code]');
+  if (copyCode) return copyFriendCode();
+  const acceptRequest = e.target.closest('[data-accept-friend-request]');
+  if (acceptRequest) return acceptFriendRequest(acceptRequest.getAttribute('data-accept-friend-request'));
+  const rejectRequest = e.target.closest('[data-reject-friend-request]');
+  if (rejectRequest) return rejectFriendRequest(rejectRequest.getAttribute('data-reject-friend-request'));
+  const cancelRequest = e.target.closest('[data-cancel-friend-request]');
+  if (cancelRequest) return cancelFriendRequest(cancelRequest.getAttribute('data-cancel-friend-request'));
+  const openFriend = e.target.closest('[data-open-friend-library]');
+  if (openFriend) return openFriendLibrary(openFriend.getAttribute('data-open-friend-library'));
+  const remove = e.target.closest('[data-remove-friend]');
+  if (remove) return removeFriend(remove.getAttribute('data-remove-friend'));
+
   const setStatus = e.target.closest('[data-set-status]');
   if (setStatus) return setAnimeStatus(setStatus.getAttribute('data-set-status'));
   const setRating = e.target.closest('[data-set-rating]');
@@ -1937,9 +2625,10 @@ document.getElementById('sheet').addEventListener('click', (e) => {
   if (e.target.id === 'confirm-delete') return deleteCurrentAnime();
 });
 
-document.getElementById('btn-search').addEventListener('click', goSearch);
-document.getElementById('btn-settings').addEventListener('click', goSettings);
-document.getElementById('btn-bell').addEventListener('click', openNotifications);
+function isFriendLibraryView(){ return state.view === 'friendLibrary' || state.view === 'friendDetail'; }
+document.getElementById('btn-search').addEventListener('click', () => { if (!isFriendLibraryView()) goSearch(); });
+document.getElementById('btn-settings').addEventListener('click', () => { if (!isFriendLibraryView()) goSettings(); });
+document.getElementById('btn-bell').addEventListener('click', () => { if (!isFriendLibraryView()) openNotifications(); });
 
 /* =========================================================
    Boot
