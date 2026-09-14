@@ -115,6 +115,9 @@
     border:1px solid var(--border);
   }
   .anime-title{ font-size:14.5px; font-weight:600; line-height:1.3; }
+  .own-library-row .anime-title-wrap{ min-width:0; flex:1; }
+  .own-library-row .anime-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .library-rating{ width:15px; flex:none; color:var(--muted); font-size:15px; line-height:1; text-align:center; }
 
   /* ---------- Empty state ---------- */
   .empty-block{ padding:56px 10px; text-align:center; }
@@ -329,6 +332,21 @@
     background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:8px;
     padding:4px 8px; font-size:12.5px; font-weight:600; font-family:inherit;
   }
+  .library-rating-toggle{
+    margin-left:auto; display:inline-flex; align-items:center; gap:7px; border:0; padding:3px 0;
+    background:transparent; color:var(--muted); font:inherit; font-size:12.5px; font-weight:700;
+  }
+  .library-rating-toggle[aria-checked="true"]{ color:var(--text); }
+  .library-rating-toggle-track{
+    position:relative; width:30px; height:18px; flex:none; border:1px solid var(--border-strong);
+    border-radius:999px; background:var(--surface-2); transition:background .18s ease, border-color .18s ease;
+  }
+  .library-rating-toggle-track::after{
+    content:''; position:absolute; top:3px; left:3px; width:10px; height:10px; border-radius:50%;
+    background:var(--muted); transition:transform .18s ease, background .18s ease;
+  }
+  .library-rating-toggle[aria-checked="true"] .library-rating-toggle-track{ background:var(--accent); border-color:var(--accent); }
+  .library-rating-toggle[aria-checked="true"] .library-rating-toggle-track::after{ transform:translateX(12px); background:var(--accent-text); }
   .status-returning{--status-color:#9b8ce0;}
   /* Subtle per-tab background treatment */
   .app-shell.series-mode{
@@ -348,7 +366,6 @@
   .friends-entry{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; text-align:left; }
   .friends-entry-copy{ min-width:0; }
   .friends-entry-title{ font-size:14.5px; font-weight:700; }
-  .friends-entry-help{ margin-top:3px; color:var(--muted); font-size:12.5px; line-height:1.4; }
   .friends-sheet-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 10px 14px; }
   .friends-sheet-head .sheet-title{ padding:0; }
   .friends-add-btn{ border:0; background:none; color:var(--accent); padding:4px 0; font:inherit; font-size:13px; font-weight:800; white-space:nowrap; }
@@ -382,7 +399,7 @@
   .friend-library-note{ color:var(--muted); font-size:12px; text-align:center; padding:0 4px 13px; }
   .friend-library-row .anime-title-wrap{ min-width:0; flex:1; }
   .friend-library-row .anime-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .friend-rating{ flex:none; color:var(--muted); font-size:15px; }
+  .friend-rating{ width:15px; flex:none; color:var(--muted); font-size:15px; line-height:1; text-align:center; }
   .friend-readonly-note{ color:var(--muted); font-size:12px; text-align:center; padding:0 4px 13px; }
   .season-head-readonly{ cursor:default; }
   .friend-rating-pill{ display:inline-flex; align-items:center; gap:6px; align-self:center; padding:7px 12px; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--text); font-size:12.5px; font-weight:700; }
@@ -773,7 +790,7 @@ const state = {
   library: [],
   showLibrary: [],
   activeTab: 'shows',
-  settings: { apiKey:'', theme:'dark', accent: ACCENTS[0], displayName:'', photoURL:'' },
+  settings: { apiKey:'', theme:'dark', accent: ACCENTS[0], displayName:'', photoURL:'', showLibraryRatings:false },
   editingProfileName: false,
   avatarUploading: false,
   avatarError: '',
@@ -841,6 +858,13 @@ let friendIdentityUserId = null;
 const FRIEND_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const FRIEND_CODE_PATTERN = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
 
+const MAX_PROFILE_PHOTO_LENGTH = 300000;
+const MAX_LIBRARY_TITLE_LENGTH = 240;
+const MAX_SEASON_NAME_LENGTH = 160;
+const MAX_TMDB_IMAGE_PATH_LENGTH = 255;
+const TMDB_IMAGE_PATH_PATTERN = /^\/[A-Za-z0-9._-]+$/;
+const PROFILE_PHOTO_PATTERN = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
+
 function cloudCollectionName(mediaType){ return mediaType === 'show' ? 'series' : 'anime'; }
 function cloudDocId(tmdbId){ return String(tmdbId); }
 function friendRequestId(fromUid, toUid){ return String(fromUid) + '_' + String(toUid); }
@@ -851,15 +875,89 @@ function generateFriendCode(){
   crypto.getRandomValues(values);
   return Array.from(values, value => FRIEND_CODE_CHARS[value % FRIEND_CODE_CHARS.length]).join('');
 }
+function normalizeText(value, maxLength){
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+}
+function boundedInteger(value, min, max, fallback){
+  const number = typeof value === 'number'
+    ? value
+    : (typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : NaN);
+  return Number.isSafeInteger(number) && number >= min && number <= max ? number : fallback;
+}
+function normalizeTmdbId(value){ return boundedInteger(value, 1, 2147483647, null); }
+function normalizeTmdbImagePath(value){
+  if (typeof value !== 'string') return null;
+  const path = value.trim();
+  return path.length <= MAX_TMDB_IMAGE_PATH_LENGTH && TMDB_IMAGE_PATH_PATTERN.test(path) ? path : null;
+}
+function normalizeProfilePhoto(value){
+  if (typeof value !== 'string') return '';
+  return value === '' || (value.length <= MAX_PROFILE_PHOTO_LENGTH && PROFILE_PHOTO_PATTERN.test(value)) ? value : '';
+}
+function normalizeSeason(value){
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const seasonNumber = boundedInteger(value.seasonNumber, 1, 1000, null);
+  const episodeCount = boundedInteger(value.episodeCount, 0, 10000, null);
+  if (seasonNumber == null || episodeCount == null) return null;
+  return {
+    seasonNumber,
+    name: normalizeText(value.name, MAX_SEASON_NAME_LENGTH) || ('Season ' + seasonNumber),
+    episodeCount,
+    watched: !!value.watched,
+  };
+}
+function normalizeTmdbMeta(value, seasons){
+  const meta = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  return {
+    numberOfSeasons: boundedInteger(meta.numberOfSeasons, 0, 1000, seasons.length),
+    numberOfEpisodes: boundedInteger(meta.numberOfEpisodes, 0, 100000, 0),
+    tmdbStatus: normalizeText(meta.tmdbStatus, 120),
+    episodeRuntime: boundedInteger(meta.episodeRuntime, 1, 1440, null),
+  };
+}
+function normalizeLibraryItem(value, mediaType, fallbackTmdbId){
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const tmdbId = normalizeTmdbId(value.tmdbId ?? fallbackTmdbId);
+  const title = normalizeText(value.title, MAX_LIBRARY_TITLE_LENGTH);
+  if (tmdbId == null || !title) return null;
+  const type = mediaType === 'show' ? 'show' : 'anime';
+  const statusMap = type === 'show' ? SHOW_STATUS_MAP : STATUS_MAP;
+  const seasons = Array.isArray(value.seasons)
+    ? value.seasons.slice(0, 100).map(normalizeSeason).filter(Boolean)
+    : [];
+  return {
+    id: String(tmdbId),
+    tmdbId,
+    title,
+    poster: normalizeTmdbImagePath(value.poster),
+    backdrop: normalizeTmdbImagePath(value.backdrop),
+    status: typeof value.status === 'string' && statusMap[value.status] ? value.status : 'planned',
+    rating: typeof value.rating === 'string' && RATING_MAP[value.rating] ? value.rating : null,
+    mediaType: type,
+    seasons,
+    tmdbMeta: normalizeTmdbMeta(value.tmdbMeta, seasons),
+    addedAt: localMillis(value.addedAt),
+    updatedAt: localMillis(value.updatedAt),
+  };
+}
 function publicDisplayName(){
   const chosen = String(state.settings.displayName || '').trim();
   const authName = cloudSyncUser && typeof cloudSyncUser.displayName === 'string' ? cloudSyncUser.displayName.trim() : '';
   // Never derive a public name from an email address.
   return (chosen || authName || 'ScreenShelf user').slice(0, 60);
 }
-function publicPhotoURL(){ return String(state.settings.photoURL || '').slice(0, 900000); }
+function publicPhotoURL(){ return normalizeProfilePhoto(state.settings.photoURL); }
+function hasSafePublicProfile(profile){
+  return !!profile
+    && typeof profile.displayName === 'string'
+    && profile.displayName.length > 0
+    && profile.displayName.length <= 60
+    && typeof profile.photoURL === 'string'
+    && normalizeProfilePhoto(profile.photoURL) === profile.photoURL;
+}
 function friendAvatarMarkup(photoURL, name){
-  if (photoURL) return `<img class="friend-avatar" src="${escapeHtml(photoURL)}" alt="">`;
+  const safePhotoURL = normalizeProfilePhoto(photoURL);
+  if (safePhotoURL) return `<img class="friend-avatar" src="${escapeHtml(safePhotoURL)}" alt="">`;
   return `<span class="friend-avatar friend-avatar-fallback" aria-hidden="true">👤</span>`;
 }
 
@@ -870,62 +968,37 @@ function localMillis(value){
 }
 
 function toCloudItem(item){
-  const cleanSeasons = (item.seasons || []).map(s => ({
-    seasonNumber: Number(s.seasonNumber),
-    name: String(s.name || ''),
-    episodeCount: Number(s.episodeCount || 0),
-    watched: !!s.watched
+  const cleanSeasons = item.seasons.map(s => ({
+    seasonNumber: s.seasonNumber,
+    name: s.name,
+    episodeCount: s.episodeCount,
+    watched: s.watched,
   }));
   return {
-    title: String(item.title || ''),
-    poster: item.poster || null,
-    backdrop: item.backdrop || null,
-    status: String(item.status || ''),
-    rating: (typeof item.rating === 'string' && RATING_MAP[item.rating]) ? item.rating : null,
+    title: item.title,
+    poster: item.poster,
+    backdrop: item.backdrop,
+    status: item.status,
+    rating: item.rating,
     seasons: cleanSeasons,
-    tmdbMeta: {
-      numberOfSeasons: Number(item.tmdbMeta?.numberOfSeasons || 0),
-      numberOfEpisodes: Number(item.tmdbMeta?.numberOfEpisodes || 0),
-      tmdbStatus: String(item.tmdbMeta?.tmdbStatus || ''),
-      episodeRuntime: (typeof item.tmdbMeta?.episodeRuntime === 'number' && item.tmdbMeta.episodeRuntime > 0) ? item.tmdbMeta.episodeRuntime : null
-    },
+    tmdbMeta: item.tmdbMeta,
     addedAt: item.addedAt ? new Date(localMillis(item.addedAt)) : serverTimestamp(),
     updatedAt: serverTimestamp()
   };
 }
 
 function fromCloudItem(data, mediaType, tmdbId){
-  return {
-    id: String(tmdbId),
-    tmdbId: Number(tmdbId),
-    title: String(data.title || ''),
-    poster: data.poster || null,
-    backdrop: data.backdrop || null,
-    status: String(data.status || ''),
-    rating: (typeof data.rating === 'string' && RATING_MAP[data.rating]) ? data.rating : null,
-    mediaType,
-    seasons: Array.isArray(data.seasons) ? data.seasons.map(s => ({
-      seasonNumber: Number(s.seasonNumber),
-      name: String(s.name || ''),
-      episodeCount: Number(s.episodeCount || 0),
-      watched: !!s.watched
-    })) : [],
-    tmdbMeta: {
-      numberOfSeasons: Number(data.tmdbMeta?.numberOfSeasons || 0),
-      numberOfEpisodes: Number(data.tmdbMeta?.numberOfEpisodes || 0),
-      tmdbStatus: String(data.tmdbMeta?.tmdbStatus || ''),
-      episodeRuntime: (typeof data.tmdbMeta?.episodeRuntime === 'number' && data.tmdbMeta.episodeRuntime > 0) ? data.tmdbMeta.episodeRuntime : null
-    },
-    addedAt: localMillis(data.addedAt),
-    updatedAt: localMillis(data.updatedAt)
-  };
+  return normalizeLibraryItem(data, mediaType, tmdbId);
 }
 
 async function cloudWriteItem(item){
   if (!cloudSyncUser) return;
+  const clean = normalizeLibraryItem(item, item.mediaType, item.tmdbId);
+  if (!clean) throw new Error('This library item has invalid data.');
   const ref = doc(firebaseDb, 'users', cloudSyncUser.uid,
-    cloudCollectionName(item.mediaType), cloudDocId(item.tmdbId));
-  await setDoc(ref, { ...toCloudItem(item), tmdbId: Number(item.tmdbId) }, { merge: true });
+    cloudCollectionName(clean.mediaType), cloudDocId(clean.tmdbId));
+  // Replace instead of merge so a save also clears any deprecated or malformed fields.
+  await setDoc(ref, { ...toCloudItem(clean), tmdbId: clean.tmdbId });
 }
 
 async function cloudDeleteItem(item){
@@ -940,14 +1013,14 @@ function applyLibrarySnapshot(snapshot, collectionName){
   const items = [];
   snapshot.forEach(d => {
     const data = d.data();
-    const tmdbId = data.tmdbId || d.id;
-    items.push(fromCloudItem(data, isSeries ? 'show' : 'anime', tmdbId));
+    const item = fromCloudItem(data, isSeries ? 'show' : 'anime', data.tmdbId ?? d.id);
+    if (item) items.push(item);
   });
   if (isSeries) state.showLibrary = items; else state.library = items;
   render();
 }
 
-/* ---- Profile doc: TMDB key + theme + accent, one doc per user ---- */
+/* ---- Profile doc: private settings and display preferences, one doc per user ---- */
 async function cloudSaveProfile(fields){
   if (!cloudSyncUser) return;
   const ref = doc(firebaseDb, 'users', cloudSyncUser.uid);
@@ -1005,7 +1078,7 @@ async function ensureFriendIdentity(){
           if (!existingCode){
             transaction.set(profileRef, { friendCode: code, updatedAt: serverTimestamp() }, { merge: true });
           }
-          if (!publicSnap.exists()){
+          if (!hasSafePublicProfile(publicSnap.exists() ? publicSnap.data() : null)){
             transaction.set(publicProfileRef, {
               displayName: publicDisplayName(),
               photoURL: publicPhotoURL(),
@@ -1044,10 +1117,17 @@ function applyProfileSnapshot(snap){
     if (typeof data.theme === 'string' && data.theme !== state.settings.theme){ state.settings.theme = data.theme; changed = true; }
     if (typeof data.accent === 'string' && data.accent !== state.settings.accent){ state.settings.accent = data.accent; changed = true; }
     if (typeof data.displayName === 'string' && data.displayName !== state.settings.displayName){ state.settings.displayName = data.displayName; changed = true; publicProfileChanged = true; }
-    if (typeof data.photoURL === 'string' && data.photoURL !== state.settings.photoURL){ state.settings.photoURL = data.photoURL; changed = true; publicProfileChanged = true; }
+    const photoURL = normalizeProfilePhoto(data.photoURL);
+    const photoNeedsCleanup = typeof data.photoURL === 'string' && photoURL !== data.photoURL;
+    if (photoURL !== state.settings.photoURL){ state.settings.photoURL = photoURL; changed = true; publicProfileChanged = true; }
+    if (photoNeedsCleanup){
+      publicProfileChanged = true;
+      cloudSaveProfile({ photoURL }).catch(error => console.warn('Profile photo cleanup failed:', error));
+    }
+    if (typeof data.showLibraryRatings === 'boolean' && data.showLibraryRatings !== state.settings.showLibraryRatings){ state.settings.showLibraryRatings = data.showLibraryRatings; changed = true; }
     if (isValidFriendCode(data.friendCode) && data.friendCode !== state.friends.friendCode){ state.friends.friendCode = data.friendCode; }
     if (publicProfileChanged) cloudSavePublicProfile().catch(error => console.warn('Public profile sync failed:', error));
-    if (changed){ applyTheme(); if (state.view === 'settings') render(); }
+    if (changed){ applyTheme(); if (state.view === 'settings' || state.view === 'home') render(); }
   }
   if (!hasTriggeredInitialRefresh && hasApiKey() && navigator.onLine){
     hasTriggeredInitialRefresh = true;
@@ -1105,6 +1185,7 @@ function stopCloudSync(){
   state.settings.accent = ACCENTS[0];
   state.settings.displayName = '';
   state.settings.photoURL = '';
+  state.settings.showLibraryRatings = false;
   state.editingProfileName = false;
   state.avatarUploading = false;
   state.avatarError = '';
@@ -1195,7 +1276,7 @@ async function loadFriendsData(){
         fromUid: String(data.fromUid || ''),
         toUid: String(data.toUid || ''),
         displayName: String(data.fromDisplayName || 'ScreenShelf user'),
-        photoURL: String(data.fromPhotoURL || ''),
+        photoURL: normalizeProfilePhoto(data.fromPhotoURL),
         createdAt: localMillis(data.createdAt),
       };
     }).filter(request => request.fromUid && request.toUid === currentUid);
@@ -1221,7 +1302,7 @@ async function loadFriendsData(){
       return {
         uid,
         displayName: String(data.displayName || 'Deleted ScreenShelf user'),
-        photoURL: String(data.photoURL || ''),
+        photoURL: normalizeProfilePhoto(data.photoURL),
       };
     }).sort((a, b) => a.displayName.localeCompare(b.displayName));
   } catch(error) {
@@ -1268,7 +1349,7 @@ async function sendFriendRequest(rawCode){
       fromUid: currentUid,
       toUid: targetUid,
       fromDisplayName: String(profile.displayName || 'ScreenShelf user').slice(0, 60),
-      fromPhotoURL: String(profile.photoURL || '').slice(0, 900000),
+      fromPhotoURL: normalizeProfilePhoto(profile.photoURL),
       createdAt: serverTimestamp(),
     });
   });
@@ -1483,7 +1564,8 @@ function tmdbSeriesToAnimeShape(tv){
    a hand-rolled IndexedDB copy.
 ========================================================= */
 function posterSrc(path){
-  return path ? (IMG_BASE + POSTER_SIZE + path) : PLACEHOLDER_SVG;
+  const safePath = normalizeTmdbImagePath(path);
+  return safePath ? (IMG_BASE + POSTER_SIZE + safePath) : PLACEHOLDER_SVG;
 }
 
 /* =========================================================
@@ -1587,14 +1669,18 @@ function renderHome(){
     <div class="empty-title">Your ${state.activeTab==='anime'?'anime':'show'} library is empty</div>
     <div class="empty-text">Search TMDB to find a series and add it to one of your lists.</div>
     <button class="btn btn-accent" id="empty-search-btn">🔍 Search TMDB</button></div>`;
-  const sortRow = `<div class="sort-row">Sort:
+  const sortRow = `<div class="sort-row"><span>Sort:</span>
     <select id="sort-select" aria-label="Sort library">${SORT_OPTIONS.map(o=>`<option value="${o.key}" ${activeSortKey()===o.key?'selected':''}>${o.label}</option>`).join('')}</select>
+    <button class="library-rating-toggle" type="button" data-toggle-library-ratings role="switch" aria-checked="${state.settings.showLibraryRatings}" aria-label="Show ratings in your library" title="Show ratings in your library"><span>Ratings</span><span class="library-rating-toggle-track" aria-hidden="true"></span></button>
   </div>`;
   const sections=statuses.map(st=>{
     const items=sortItems(lib.filter(a=>a.status===st.key));
     const open=state.expandedStatus===st.key;
-    const rows=items.length?items.map(a=>`<button class="anime-row" data-open-detail="${a.id}">
-      <img class="poster-thumb" src="${posterSrc(a.poster)}" data-poster-path="${a.poster||''}" alt=""><span class="anime-title">${escapeHtml(a.title)}</span></button>`).join(''):`<div class="status-empty">${escapeHtml(EMPTY_STATUS_MESSAGES[st.key] || 'Nothing here yet.')}</div>`;
+    const rows=items.length?items.map(a=>{
+      const rating = a.rating && RATING_MAP[a.rating] ? RATING_MAP[a.rating] : null;
+      return `<button class="anime-row own-library-row" data-open-detail="${escapeHtml(a.id)}">
+        <img class="poster-thumb" src="${posterSrc(a.poster)}" alt=""><span class="anime-title-wrap"><span class="anime-title">${escapeHtml(a.title)}</span></span>${state.settings.showLibraryRatings ? `<span class="library-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}" aria-label="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : ''}</span>` : ''}</button>`;
+    }).join(''):`<div class="status-empty">${escapeHtml(EMPTY_STATUS_MESSAGES[st.key] || 'Nothing here yet.')}</div>`;
     return `<div class="status-section status-${st.key}"><button class="status-header" aria-expanded="${open}" data-toggle-status="${st.key}">
       <span class="status-dot"></span><span>${st.label}</span><span class="status-emoji">${st.emoji}</span><span class="status-count">•${items.length}</span><span class="status-caret">›</span>
       </button><div class="status-list ${open?'open':''}"><div class="status-list-inner">${rows}</div></div></div>`;
@@ -1648,8 +1734,8 @@ function renderSearchResultsBody(){
     const owned = activeLibrary().find(a => a.tmdbId === r.id);
     const ownedStatus = owned ? activeStatusMap()[owned.status] : null;
     return `
-      <button class="search-card" data-preview="${r.id}">
-        <img class="search-poster" src="${posterSrc(r.poster_path)}" data-poster-path="${r.poster_path||''}" alt="">
+      <button class="search-card" data-preview="${escapeHtml(r.id)}">
+        <img class="search-poster" src="${posterSrc(r.poster_path)}" alt="">
         <div class="search-card-title">${escapeHtml(r.name)}</div>
         ${owned && ownedStatus ? `<div class="search-card-owned">${ownedStatus.emoji} In library</div>` : ''}
       </button>`;
@@ -1678,13 +1764,13 @@ function renderDetail(){
   const owned=state.previewMode?lib.find(x=>x.tmdbId===a.tmdbId):null;
   let actions='';
   if(state.previewMode&&!owned)actions=`<div class="detail-actions"><button class="btn btn-accent btn-block" data-add-anime="1">Add to library</button></div>`;
-  else if(state.previewMode&&owned){const st=map[owned.status]||map.planned;actions=`<div class="detail-actions"><div class="status-pill status-${owned.status}"><span class="status-dot"></span>${st.label} ${st.emoji}</div><button class="btn btn-ghost btn-block" data-open-detail="${owned.id}">View in library</button></div>`;}
+  else if(state.previewMode&&owned){const st=map[owned.status]||map.planned;actions=`<div class="detail-actions"><div class="status-pill status-${owned.status}"><span class="status-dot"></span>${st.label} ${st.emoji}</div><button class="btn btn-ghost btn-block" data-open-detail="${escapeHtml(owned.id)}">View in library</button></div>`;}
   else{const st=map[a.status]||map.planned;const ratingEmoji=(a.rating&&RATING_MAP[a.rating])?RATING_MAP[a.rating].emoji:RATING_UNSET_EMOJI;
     actions=`<div class="detail-actions"><div class="detail-meta-row"><div class="status-pill status-${a.status}"><span class="status-dot"></span>${st.label} ${st.emoji}</div><button class="rating-pill" data-open-rating="1">Rating: <span class="rating-emoji">${ratingEmoji}</span></button></div><button class="btn btn-ghost btn-block" data-change-status="1">Change status</button></div>`;}
   const tmdbStatus=a.tmdbMeta&&a.tmdbMeta.tmdbStatus?`<div class="detail-tmdb-status">TMDB status: ${escapeHtml(a.tmdbMeta.tmdbStatus)}</div>`:'';
   const del=!state.previewMode?`<div class="delete-fab"><button class="btn btn-danger btn-sm" data-delete-anime="1">🗑️ Remove from library</button></div>`:'';
   return `<div class="view-head"><button class="back-btn" data-go="${state.previewMode?'search':'home'}">← Back</button></div>
-    <div class="detail-hero"><h1 class="detail-title">${escapeHtml(a.title)}</h1><div class="detail-poster-wrap"><img class="detail-poster" src="${posterSrc(a.poster)}" data-poster-path="${a.poster||''}" alt=""></div>
+    <div class="detail-hero"><h1 class="detail-title">${escapeHtml(a.title)}</h1><div class="detail-poster-wrap"><img class="detail-poster" src="${posterSrc(a.poster)}" alt=""></div>
     <div class="detail-stats"><b>${seasons.length}</b>&nbsp;seasons&nbsp;&nbsp;·&nbsp;&nbsp;<b>${totalEpisodes}</b>&nbsp;episodes</div>${tmdbStatus}</div>
     ${actions}<div class="section-label">Seasons</div><div id="season-list">${seasonRows}</div>${del}`;
 }
@@ -1744,7 +1830,7 @@ function renderSettings(){
     <div class="field">
       <label class="field-label">Friends</label>
       <button class="btn btn-ghost btn-block friends-entry" id="open-friends-btn">
-        <span class="friends-entry-copy"><span class="friends-entry-title">Friends</span><span class="friends-entry-help">Share your library with people you trust.</span></span>
+        <span class="friends-entry-copy"><span class="friends-entry-title">Friends</span></span>
         <span aria-hidden="true">›</span>
       </button>
     </div>
@@ -1940,9 +2026,9 @@ function renderFriendLibrary(){
     const rows = items.length ? items.map(item => {
       const rating = item.rating && RATING_MAP[item.rating] ? RATINGS.find(value => value.key === item.rating) : null;
       return `<button class="anime-row friend-library-row" data-open-friend-detail="${escapeHtml(item.id)}">
-        <img class="poster-thumb" src="${posterSrc(item.poster)}" data-poster-path="${item.poster||''}" alt="">
+        <img class="poster-thumb" src="${posterSrc(item.poster)}" alt="">
         <span class="anime-title-wrap"><span class="anime-title">${escapeHtml(item.title)}</span></span>
-        <span class="friend-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : '❓'}</span>
+        <span class="friend-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}" aria-label="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : ''}</span>
       </button>`;
     }).join('') : `<div class="status-empty">${escapeHtml(EMPTY_STATUS_MESSAGES[status.key] || 'Nothing here yet.')}</div>`;
     return `<div class="status-section status-${status.key}"><button class="status-header" aria-expanded="${open}" data-toggle-friend-status="${status.key}">
@@ -1962,7 +2048,7 @@ function renderFriendDetail(){
   const totalEpisodes = seasons.reduce((count, season) => count + (season.episodeCount || 0), 0);
   const seasonRows = seasons.length ? seasons.map(season => `<div class="season-row"><div class="season-head season-head-readonly"><span class="season-check ${season.watched?'checked':''}">${season.watched?'✓':''}</span><span class="season-name">${escapeHtml(season.name)} <span style="color:var(--muted); font-weight:500;">· ${season.episodeCount} ep</span></span></div></div>`).join('') : `<div class="status-empty">No season data from TMDB.</div>`;
   return `<div class="view-head"><button class="back-btn" data-go="friend-library">← Back</button></div>
-    <div class="detail-hero"><h1 class="detail-title">${escapeHtml(item.title)}</h1><div class="detail-poster-wrap"><img class="detail-poster" src="${posterSrc(item.poster)}" data-poster-path="${item.poster||''}" alt=""></div>
+    <div class="detail-hero"><h1 class="detail-title">${escapeHtml(item.title)}</h1><div class="detail-poster-wrap"><img class="detail-poster" src="${posterSrc(item.poster)}" alt=""></div>
     <div class="detail-stats"><b>${seasons.length}</b>&nbsp;seasons&nbsp;&nbsp;·&nbsp;&nbsp;<b>${totalEpisodes}</b>&nbsp;episodes</div></div>
     <div class="detail-actions"><div class="status-pill status-${item.status}"><span class="status-dot"></span>${status.label} ${status.emoji}</div><div class="friend-rating-pill">Rating: ${rating ? `${rating.emoji} ${escapeHtml(rating.label)}` : '❓ Not rated'}</div></div>
     <div class="friend-readonly-note">Read-only library</div><div class="section-label">Seasons</div><div id="season-list">${seasonRows}</div>`;
@@ -2039,10 +2125,15 @@ function openStatusSheet(){
 function openRatingSheet(){
   const a = activeLibrary().find(x => x.id === state.detailId);
   if (!a) return;
-  const options = RATINGS.map(r => `
-    <button class="rating-choice ${a.rating===r.key?'current':''}" data-set-rating="${r.key}">
-      <span class="rating-choice-emoji">${r.emoji}</span> ${r.label}
-    </button>`).join('');
+  const options = [
+    `<button class="rating-choice ${!a.rating?'current':''}" data-set-rating="unset">
+      <span class="rating-choice-emoji">${RATING_UNSET_EMOJI}</span> Not rated
+    </button>`,
+    ...RATINGS.map(r => `
+      <button class="rating-choice ${a.rating===r.key?'current':''}" data-set-rating="${r.key}">
+        <span class="rating-choice-emoji">${r.emoji}</span> ${r.label}
+      </button>`),
+  ].join('');
   openSheet(`
     <div class="sheet-grip"></div>
     <div class="sheet-title">Rate “${escapeHtml(a.title)}”</div>
@@ -2080,11 +2171,13 @@ async function runSearch(q){
   state.searchLoading=true;updateSearchResults();
   try{
     const data=await searchTv(q.trim());
-    state.searchResults=(data.results||[]).filter(r=>{
-      if(!r.name)return false;
-      const isAnimation=Array.isArray(r.genre_ids)&&r.genre_ids.includes(16);
-      return state.activeTab==='anime' ? isAnimation : !isAnimation;
-    });
+    state.searchResults=(data.results||[]).map(r=>{
+      const id = normalizeTmdbId(r.id);
+      const name = normalizeText(r.name, MAX_LIBRARY_TITLE_LENGTH);
+      const isAnimation = Array.isArray(r.genre_ids) && r.genre_ids.includes(16);
+      if (!id || !name || (state.activeTab==='anime' ? !isAnimation : isAnimation)) return null;
+      return { id, name, poster_path: normalizeTmdbImagePath(r.poster_path) };
+    }).filter(Boolean);
     state.searchError='';
   }catch(err){state.searchError=err.message||'Something went wrong.';state.searchResults=[];}
   state.searchLoading=false;updateSearchResults();
@@ -2096,8 +2189,15 @@ function onSearchInput(v){
 }
 
 async function openPreview(tmdbId){
+  const safeTmdbId = normalizeTmdbId(tmdbId);
+  if (!safeTmdbId){ showToast('That search result is unavailable.'); return; }
   state.view='detail';state.previewMode=true;state.detailLoading=true;render();
-  try{const tv=await getTvDetails(tmdbId);state.previewTmdb=tmdbSeriesToAnimeShape(tv);}
+  try{
+    const tv = await getTvDetails(safeTmdbId);
+    const preview = normalizeLibraryItem(tmdbSeriesToAnimeShape(tv), state.activeTab === 'anime' ? 'anime' : 'show');
+    if (!preview) throw new Error('TMDB returned invalid show data.');
+    state.previewTmdb = preview;
+  }
   catch(err){showToast(err.message||'Could not load details.');state.view='search';state.previewMode=false;render();return;}
   state.detailLoading=false;render();
 }
@@ -2110,8 +2210,11 @@ async function addPreviewToLibrary(){
 }
 async function confirmAddWithStatus(statusKey){
   const src=state.previewTmdb,map=activeStatusMap();if(!src||!map[statusKey])return;
-  const item={id:String(src.tmdbId),tmdbId:src.tmdbId,title:src.title,poster:src.poster,backdrop:src.backdrop,status:statusKey,rating:null,mediaType:state.activeTab==='anime'?'anime':'show',
-    seasons:src.seasons.map(s=>Object.assign({},s)),tmdbMeta:src.tmdbMeta,addedAt:Date.now(),updatedAt:Date.now()};
+  const item = normalizeLibraryItem({
+    tmdbId:src.tmdbId, title:src.title, poster:src.poster, backdrop:src.backdrop, status:statusKey,
+    rating:null, seasons:src.seasons, tmdbMeta:src.tmdbMeta, addedAt:Date.now(), updatedAt:Date.now(),
+  }, state.activeTab==='anime'?'anime':'show');
+  if (!item){ showToast('Could not add that title.'); return; }
   activeLibrary().push(item);await saveActiveItem(item);closeSheet();showToast('Added to '+map[statusKey].label+'.');
   state.view='detail';state.previewMode=false;state.detailId=item.id;render();
 }
@@ -2120,8 +2223,12 @@ async function setAnimeStatus(statusKey){
   a.status=statusKey;await saveActiveItem(a);closeSheet();render();
 }
 async function setAnimeRating(ratingKey){
-  const a=activeLibrary().find(x=>x.id===state.detailId);if(!a||!RATING_MAP[ratingKey])return;
-  a.rating=ratingKey;await saveActiveItem(a);closeSheet();render();
+  const a = activeLibrary().find(x => x.id === state.detailId);
+  if (!a || (ratingKey !== 'unset' && !RATING_MAP[ratingKey])) return;
+  a.rating = ratingKey === 'unset' ? null : ratingKey;
+  await saveActiveItem(a);
+  closeSheet();
+  render();
 }
 async function deleteCurrentAnime(){
   const a = activeLibrary().find(x => x.id === state.detailId);
@@ -2134,6 +2241,19 @@ async function deleteCurrentAnime(){
 async function toggleSeasonWatched(idx){
   const a=activeLibrary().find(x=>x.id===state.detailId);if(!a||state.previewMode)return;const s=a.seasons[idx];if(!s)return;
   s.watched=!s.watched;await saveActiveItem(a);render();
+}
+async function toggleLibraryRatings(){
+  const previous = state.settings.showLibraryRatings;
+  state.settings.showLibraryRatings = !previous;
+  render();
+  try {
+    await cloudSaveProfile({ showLibraryRatings: state.settings.showLibraryRatings });
+  } catch(error) {
+    console.error('Could not save rating visibility preference:', error);
+    state.settings.showLibraryRatings = previous;
+    render();
+    showToast('Could not save rating visibility.');
+  }
 }
 
 /* =========================================================
@@ -2238,7 +2358,7 @@ async function onAvatarFileSelected(file){
   render();
   try {
     const dataUrl = await fileToCompressedDataUrl(file);
-    if (dataUrl.length > 900000){
+    if (dataUrl.length > MAX_PROFILE_PHOTO_LENGTH){
       throw new Error('Compressed image still too large.');
     }
     state.settings.photoURL = dataUrl;
@@ -2338,32 +2458,17 @@ async function importLibrary(file){
   let animeAdded = 0, seriesAdded = 0, skipped = 0;
 
   const restore = async (item, mediaType) => {
-    if (!item?.tmdbId || !item?.title) {
+    const restored = normalizeLibraryItem(item, mediaType);
+    if (!restored) {
       skipped++;
       return;
     }
 
     const target = mediaType === 'show' ? state.showLibrary : state.library;
-    if (target.some(a => a.tmdbId === item.tmdbId)) {
+    if (target.some(a => a.tmdbId === restored.tmdbId)) {
       skipped++;
       return;
     }
-
-    const restored = {
-      id: String(item.tmdbId),
-      tmdbId: item.tmdbId,
-      title: item.title,
-      poster: item.poster || null,
-      backdrop: item.backdrop || null,
-      status: item.status || 'planned',
-      rating: (typeof item.rating === 'string' && RATING_MAP[item.rating]) ? item.rating : null,
-      mediaType,
-      seasons: Array.isArray(item.seasons)
-        ? item.seasons.map(s => Object.assign({}, s))
-        : [],
-      tmdbMeta: item.tmdbMeta || null,
-      addedAt: item.addedAt || Date.now(),
-    };
 
     target.push(restored);
     await saveActiveItemForType(restored, mediaType);
@@ -2484,6 +2589,8 @@ function wireViewEvents(){
     state.sortBy[key] = sortSelect.value;
     render();
   });
+  const libraryRatingsToggle = main.querySelector('[data-toggle-library-ratings]');
+  if (libraryRatingsToggle) libraryRatingsToggle.addEventListener('click', toggleLibraryRatings);
 
   main.querySelectorAll('[data-friend-media-tab]').forEach(el => el.addEventListener('click', () => {
     state.friendLibrary.activeTab = el.getAttribute('data-friend-media-tab');
@@ -2653,5 +2760,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b25d91ebf71432',t:'MTc4OTQyMDA5MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

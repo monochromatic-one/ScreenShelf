@@ -23,31 +23,122 @@ service cloud.firestore {
       return uidA != uidB && exists(/databases/$(database)/documents/friendships/$(key));
     }
 
+    // Profile pictures are compressed JPEG data URLs produced in the browser.
+    // Do not permit arbitrary remote URLs in public profile data.
+    function validProfilePhoto(photoURL) {
+      return photoURL is string
+        && photoURL.size() <= 300000
+        && (photoURL == ''
+          || photoURL.matches('^data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}$'));
+    }
+
     function validPublicProfile(data) {
       return data.keys().hasOnly(['displayName', 'photoURL', 'updatedAt'])
         && data.keys().hasAll(['displayName', 'photoURL', 'updatedAt'])
         && data.displayName is string
         && data.displayName.size() > 0
         && data.displayName.size() <= 60
-        && data.photoURL is string
-        && data.photoURL.size() <= 900000
+        && validProfilePhoto(data.photoURL)
         && data.updatedAt == request.time;
+    }
+
+    function validPrivateProfilePhoto(data) {
+      return !('photoURL' in data) || validProfilePhoto(data.photoURL);
     }
 
     // A private users/{uid} document may be created before Friend Code setup
     // completes, but once a code exists it cannot be removed or changed.
     function validNewPrivateProfile(userId) {
-      return !('friendCode' in request.resource.data)
-        || (validFriendCode(request.resource.data.friendCode)
-          && existsAfter(/databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode))
-          && getAfter(/databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode)).data.uid == userId);
+      return validPrivateProfilePhoto(request.resource.data)
+        && (!('friendCode' in request.resource.data)
+          || (validFriendCode(request.resource.data.friendCode)
+            && existsAfter(/databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode))
+            && getAfter(/databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode)).data.uid == userId));
     }
 
     function validPrivateProfileUpdate(userId) {
-      return !('friendCode' in resource.data)
-        ? validNewPrivateProfile(userId)
-        : ('friendCode' in request.resource.data
-          && request.resource.data.friendCode == resource.data.friendCode);
+      return validPrivateProfilePhoto(request.resource.data)
+        && (!('friendCode' in resource.data)
+          ? validNewPrivateProfile(userId)
+          : ('friendCode' in request.resource.data
+            && request.resource.data.friendCode == resource.data.friendCode));
+    }
+
+    function validTmdbImagePath(path) {
+      return path == null || (path is string
+        && path.size() <= 255
+        && path.matches('^/[A-Za-z0-9._-]+$'));
+    }
+
+    function validRating(rating) {
+      return rating == null
+        || rating == 'hot'
+        || rating == 'good'
+        || rating == 'okay'
+        || rating == 'bad';
+    }
+
+    function validTmdbMeta(meta) {
+      return meta is map
+        && meta.keys().hasOnly(['numberOfSeasons', 'numberOfEpisodes', 'tmdbStatus', 'episodeRuntime'])
+        && meta.keys().hasAll(['numberOfSeasons', 'numberOfEpisodes', 'tmdbStatus', 'episodeRuntime'])
+        && meta.numberOfSeasons is int
+        && meta.numberOfSeasons >= 0
+        && meta.numberOfSeasons <= 1000
+        && meta.numberOfEpisodes is int
+        && meta.numberOfEpisodes >= 0
+        && meta.numberOfEpisodes <= 100000
+        && meta.tmdbStatus is string
+        && meta.tmdbStatus.size() <= 120
+        && (meta.episodeRuntime == null || (meta.episodeRuntime is int
+          && meta.episodeRuntime >= 1
+          && meta.episodeRuntime <= 1440));
+    }
+
+    // Rules cannot iterate a list of season maps. The client separately
+    // normalizes every season before rendering, while this rule bounds the
+    // shared document and validates all executable/rendered top-level fields.
+    function validLibraryItem(data) {
+      return data.keys().hasOnly([
+          'tmdbId', 'title', 'poster', 'backdrop', 'status', 'rating',
+          'seasons', 'tmdbMeta', 'addedAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'tmdbId', 'title', 'poster', 'backdrop', 'status', 'rating',
+          'seasons', 'tmdbMeta', 'addedAt', 'updatedAt'
+        ])
+        && data.tmdbId is int
+        && data.tmdbId >= 1
+        && data.tmdbId <= 2147483647
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 240
+        && validTmdbImagePath(data.poster)
+        && validTmdbImagePath(data.backdrop)
+        && validRating(data.rating)
+        && data.seasons is list
+        && data.seasons.size() <= 100
+        && validTmdbMeta(data.tmdbMeta)
+        && data.addedAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function validAnimeLibraryItem(data) {
+      return validLibraryItem(data)
+        && (data.status == 'watching'
+          || data.status == 'planned'
+          || data.status == 'comeback'
+          || data.status == 'finished'
+          || data.status == 'dropped');
+    }
+
+    function validSeriesLibraryItem(data) {
+      return validLibraryItem(data)
+        && (data.status == 'watching'
+          || data.status == 'planned'
+          || data.status == 'returning'
+          || data.status == 'finished'
+          || data.status == 'dropped');
     }
 
     function validFriendRequest(requestId) {
@@ -67,8 +158,7 @@ service cloud.firestore {
         && request.resource.data.fromDisplayName is string
         && request.resource.data.fromDisplayName.size() > 0
         && request.resource.data.fromDisplayName.size() <= 60
-        && request.resource.data.fromPhotoURL is string
-        && request.resource.data.fromPhotoURL.size() <= 900000
+        && validProfilePhoto(request.resource.data.fromPhotoURL)
         && request.resource.data.createdAt == request.time
         // Copy public fields into a pending request; do not expose users/{uid}.
         && exists(/databases/$(database)/documents/publicProfiles/$(request.auth.uid))
@@ -180,12 +270,14 @@ service cloud.firestore {
       // exists. Pending requests grant no library access.
       match /anime/{animeId} {
         allow get, list: if signedIn() && (request.auth.uid == userId || areFriends(request.auth.uid, userId));
-        allow create, update, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validAnimeLibraryItem(request.resource.data);
+        allow delete: if isOwner(userId);
       }
 
       match /series/{seriesId} {
         allow get, list: if signedIn() && (request.auth.uid == userId || areFriends(request.auth.uid, userId));
-        allow create, update, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validSeriesLibraryItem(request.resource.data);
+        allow delete: if isOwner(userId);
       }
 
       // Notifications remain private, including from accepted friends.
