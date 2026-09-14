@@ -1,4 +1,4 @@
-const CACHE = 'screenshelf-shell-v1';
+const CACHE = 'screenshelf-shell-v2';
 const IMAGE_CACHE = 'screenshelf-images-v1';
 const APP_SHELL = [
   './',
