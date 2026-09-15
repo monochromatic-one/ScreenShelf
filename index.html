@@ -93,9 +93,9 @@
   .status-count{ margin-left:auto; color:var(--muted); font-weight:600; font-size:13.5px; }
   .status-caret{ color:var(--muted); font-size:12px; transition:transform .18s ease; margin-left:2px; }
   .status-header[aria-expanded="true"] .status-caret{ transform:rotate(90deg); }
-  .status-list{ overflow:hidden; max-height:0; transition:max-height .25s ease; }
-  .status-list.open{ max-height:4000px; }
-  .status-list-inner{ padding-bottom:10px; }
+  .status-list{ display:grid; grid-template-rows:0fr; overflow:hidden; transition:grid-template-rows .25s ease; }
+  .status-list.open{ grid-template-rows:1fr; }
+  .status-list-inner{ min-height:0; overflow:hidden; padding-bottom:10px; }
   .status-empty{ color:var(--muted); font-size:13.5px; padding:14px 4px 20px; text-align:center; line-height:1.5; }
   .main.main-flex-fill{ display:flex; flex-direction:column; }
   .watched-time-stat{ text-align:center; padding:26px 12px 10px; margin-top:auto; }
@@ -118,6 +118,26 @@
   .own-library-row .anime-title-wrap{ min-width:0; flex:1; }
   .own-library-row .anime-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .library-rating{ width:15px; flex:none; color:var(--muted); font-size:15px; line-height:1; text-align:center; }
+  .library-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:10px; padding:0 4px; }
+  .library-grid-tile{
+    position:relative; display:block; min-width:0; padding:0; overflow:hidden; text-align:left;
+    background:transparent; border:0; border-radius:8px; color:var(--text);
+  }
+  .library-grid-tile:active{ transform:scale(.98); }
+  .library-grid-poster{
+    width:100%; aspect-ratio:2/3; border:1px solid var(--border); border-radius:8px;
+    background:var(--surface-2); object-fit:cover;
+  }
+  .library-grid-title{
+    display:block; overflow:hidden; margin-top:6px; color:var(--text); font-size:12px; font-weight:600;
+    line-height:1.3; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .library-grid-rating{
+    position:absolute; top:5px; right:5px; display:flex; align-items:center; justify-content:center;
+    min-width:24px; min-height:24px; padding:2px; border:1px solid var(--border-strong); border-radius:999px;
+    background:color-mix(in srgb, var(--surface) 90%, transparent); box-shadow:0 2px 6px rgba(0,0,0,.2);
+    font-size:14px; line-height:1;
+  }
 
   /* ---------- Empty state ---------- */
   .empty-block{ padding:56px 10px; text-align:center; }
@@ -332,11 +352,24 @@
     background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:8px;
     padding:4px 8px; font-size:12.5px; font-weight:600; font-family:inherit;
   }
-  .library-rating-toggle{
-    margin-left:auto; display:inline-flex; align-items:center; gap:7px; border:0; padding:3px 0;
-    background:transparent; color:var(--muted); font:inherit; font-size:12.5px; font-weight:700;
+  .library-view-toggle{
+    margin-left:auto; display:inline-flex; align-items:stretch; overflow:hidden; flex:none;
+    border:1px solid var(--border); border-radius:8px; background:var(--surface);
   }
-  .library-rating-toggle[aria-checked="true"]{ color:var(--text); }
+  .library-view-option{
+    display:inline-flex; align-items:center; gap:4px; border:0; padding:4px 6px;
+    background:transparent; color:var(--muted); font:inherit; font-size:11.5px; font-weight:700;
+  }
+  .library-view-option + .library-view-option{ border-left:1px solid var(--border); }
+  .library-view-option[aria-pressed="true"]{ background:var(--surface-2); color:var(--text); }
+  .library-view-icon{ font-size:14px; line-height:1; }
+  .library-settings-toggle{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px;
+    border:1px solid var(--border); border-radius:12px; background:var(--surface); color:var(--text); text-align:left;
+  }
+  .library-settings-toggle-copy{ min-width:0; }
+  .library-settings-toggle-title{ display:block; font-size:13.5px; font-weight:700; }
+  .library-settings-toggle-help{ display:block; margin-top:3px; color:var(--muted); font-size:11.5px; font-weight:500; line-height:1.4; }
   .library-rating-toggle-track{
     position:relative; width:30px; height:18px; flex:none; border:1px solid var(--border-strong);
     border-radius:999px; background:var(--surface-2); transition:background .18s ease, border-color .18s ease;
@@ -345,8 +378,8 @@
     content:''; position:absolute; top:3px; left:3px; width:10px; height:10px; border-radius:50%;
     background:var(--muted); transition:transform .18s ease, background .18s ease;
   }
-  .library-rating-toggle[aria-checked="true"] .library-rating-toggle-track{ background:var(--accent); border-color:var(--accent); }
-  .library-rating-toggle[aria-checked="true"] .library-rating-toggle-track::after{ transform:translateX(12px); background:var(--accent-text); }
+  .library-settings-toggle[aria-checked="true"] .library-rating-toggle-track{ background:var(--accent); border-color:var(--accent); }
+  .library-settings-toggle[aria-checked="true"] .library-rating-toggle-track::after{ transform:translateX(12px); background:var(--accent-text); }
   .status-returning{--status-color:#9b8ce0;}
   /* Subtle per-tab background treatment */
   .app-shell.series-mode{
@@ -766,10 +799,10 @@ const SHOW_STATUSES = [
 ];
 const SHOW_STATUS_MAP = Object.fromEntries(SHOW_STATUSES.map(s=>[s.key,s]));
 const RATINGS = [
-  { key:'hot',  label:'Peak',      emoji:'♨️' },
-  { key:'good', label:'Great',     emoji:'😌' },
-  { key:'okay', label:'Decent',    emoji:'😐' },
-  { key:'bad',  label:'Trash-ish', emoji:'☹️' },
+  { key:'hot',  label:'PEAK',      emoji:'♨️' },
+  { key:'good', label:'Go for it', emoji:'😌' },
+  { key:'okay', label:'Timepass',  emoji:'🫠' },
+  { key:'bad',  label:'Skip',      emoji:'😫' },
 ];
 const RATING_MAP = Object.fromEntries(RATINGS.map(r=>[r.key,r]));
 const RATING_UNSET_EMOJI = '❓';
@@ -807,6 +840,7 @@ const state = {
   previewTmdb: null,
   refreshing: false,
   sortBy: { anime: 'az', shows: 'az' },
+  libraryView: 'list',
   friends: {
     friendCode: '',
     loading: false,
@@ -1478,8 +1512,8 @@ async function loadFriendLibrary(friendUid){
       getDocs(collection(firebaseDb, 'users', friendUid, 'anime')),
       getDocs(collection(firebaseDb, 'users', friendUid, 'series')),
     ]);
-    state.friendLibrary.anime = animeSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'anime', snapshot.data().tmdbId || snapshot.id)).filter(Boolean);
-    state.friendLibrary.series = seriesSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'show', snapshot.data().tmdbId || snapshot.id)).filter(Boolean);
+    state.friendLibrary.anime = animeSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'anime', snapshot.data().tmdbId ?? snapshot.id)).filter(Boolean);
+    state.friendLibrary.series = seriesSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'show', snapshot.data().tmdbId ?? snapshot.id)).filter(Boolean);
   } catch(error) {
     console.warn('Could not load friend library:', error);
     state.friendLibrary.error = 'This library is unavailable. You may no longer be friends, or the account may no longer exist.';
@@ -1671,16 +1705,27 @@ function renderHome(){
     <button class="btn btn-accent" id="empty-search-btn">🔍 Search TMDB</button></div>`;
   const sortRow = `<div class="sort-row"><span>Sort:</span>
     <select id="sort-select" aria-label="Sort library">${SORT_OPTIONS.map(o=>`<option value="${o.key}" ${activeSortKey()===o.key?'selected':''}>${o.label}</option>`).join('')}</select>
-    <button class="library-rating-toggle" type="button" data-toggle-library-ratings role="switch" aria-checked="${state.settings.showLibraryRatings}" aria-label="Show ratings in your library" title="Show ratings in your library"><span>Ratings</span><span class="library-rating-toggle-track" aria-hidden="true"></span></button>
+    <div class="library-view-toggle" role="group" aria-label="Library view">
+      <button class="library-view-option" type="button" data-set-library-view="list" aria-pressed="${state.libraryView === 'list'}"><span class="library-view-icon" aria-hidden="true">≡</span>List</button>
+      <button class="library-view-option" type="button" data-set-library-view="grid" aria-pressed="${state.libraryView === 'grid'}"><span class="library-view-icon" aria-hidden="true">⊞</span>Grid</button>
+    </div>
   </div>`;
   const sections=statuses.map(st=>{
     const items=sortItems(lib.filter(a=>a.status===st.key));
     const open=state.expandedStatus===st.key;
-    const rows=items.length?items.map(a=>{
-      const rating = a.rating && RATING_MAP[a.rating] ? RATING_MAP[a.rating] : null;
-      return `<button class="anime-row own-library-row" data-open-detail="${escapeHtml(a.id)}">
-        <img class="poster-thumb" src="${posterSrc(a.poster)}" alt=""><span class="anime-title-wrap"><span class="anime-title">${escapeHtml(a.title)}</span></span>${state.settings.showLibraryRatings ? `<span class="library-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}" aria-label="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : ''}</span>` : ''}</button>`;
-    }).join(''):`<div class="status-empty">${escapeHtml(EMPTY_STATUS_MESSAGES[st.key] || 'Nothing here yet.')}</div>`;
+    const rows=items.length ? (state.libraryView === 'grid'
+      ? `<div class="library-grid">${items.map(a=>{
+        const rating = a.rating && RATING_MAP[a.rating] ? RATING_MAP[a.rating] : null;
+        return `<button class="library-grid-tile" data-open-detail="${escapeHtml(a.id)}">
+          <img class="library-grid-poster" src="${posterSrc(a.poster)}" alt="">${rating ? `<span class="library-grid-rating" aria-label="${escapeHtml(rating.label)}" title="${escapeHtml(rating.label)}">${rating.emoji}</span>` : ''}<span class="library-grid-title">${escapeHtml(a.title)}</span>
+        </button>`;
+      }).join('')}</div>`
+      : items.map(a=>{
+        const rating = a.rating && RATING_MAP[a.rating] ? RATING_MAP[a.rating] : null;
+        return `<button class="anime-row own-library-row" data-open-detail="${escapeHtml(a.id)}">
+          <img class="poster-thumb" src="${posterSrc(a.poster)}" alt=""><span class="anime-title-wrap"><span class="anime-title">${escapeHtml(a.title)}</span></span>${state.settings.showLibraryRatings ? `<span class="library-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}" aria-label="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : ''}</span>` : ''}</button>`;
+      }).join(''))
+      : `<div class="status-empty">${escapeHtml(EMPTY_STATUS_MESSAGES[st.key] || 'Nothing here yet.')}</div>`;
     return `<div class="status-section status-${st.key}"><button class="status-header" aria-expanded="${open}" data-toggle-status="${st.key}">
       <span class="status-dot"></span><span>${st.label}</span><span class="status-emoji">${st.emoji}</span><span class="status-count">•${items.length}</span><span class="status-caret">›</span>
       </button><div class="status-list ${open?'open':''}"><div class="status-list-inner">${rows}</div></div></div>`;
@@ -1765,8 +1810,8 @@ function renderDetail(){
   let actions='';
   if(state.previewMode&&!owned)actions=`<div class="detail-actions"><button class="btn btn-accent btn-block" data-add-anime="1">Add to library</button></div>`;
   else if(state.previewMode&&owned){const st=map[owned.status]||map.planned;actions=`<div class="detail-actions"><div class="status-pill status-${owned.status}"><span class="status-dot"></span>${st.label} ${st.emoji}</div><button class="btn btn-ghost btn-block" data-open-detail="${escapeHtml(owned.id)}">View in library</button></div>`;}
-  else{const st=map[a.status]||map.planned;const ratingEmoji=(a.rating&&RATING_MAP[a.rating])?RATING_MAP[a.rating].emoji:RATING_UNSET_EMOJI;
-    actions=`<div class="detail-actions"><div class="detail-meta-row"><div class="status-pill status-${a.status}"><span class="status-dot"></span>${st.label} ${st.emoji}</div><button class="rating-pill" data-open-rating="1">Rating: <span class="rating-emoji">${ratingEmoji}</span></button></div><button class="btn btn-ghost btn-block" data-change-status="1">Change status</button></div>`;}
+  else{const st=map[a.status]||map.planned;const rating=(a.rating&&RATING_MAP[a.rating])?RATING_MAP[a.rating]:null;
+    actions=`<div class="detail-actions"><div class="detail-meta-row"><div class="status-pill status-${a.status}"><span class="status-dot"></span>${st.label} ${st.emoji}</div><button class="rating-pill" data-open-rating="1">Rating: <span class="rating-emoji">${rating ? `${rating.emoji} ${escapeHtml(rating.label)}` : RATING_UNSET_EMOJI}</span></button></div><button class="btn btn-ghost btn-block" data-change-status="1">Change status</button></div>`;}
   const tmdbStatus=a.tmdbMeta&&a.tmdbMeta.tmdbStatus?`<div class="detail-tmdb-status">TMDB status: ${escapeHtml(a.tmdbMeta.tmdbStatus)}</div>`:'';
   const del=!state.previewMode?`<div class="delete-fab"><button class="btn btn-danger btn-sm" data-delete-anime="1">🗑️ Remove from library</button></div>`:'';
   return `<div class="view-head"><button class="back-btn" data-go="${state.previewMode?'search':'home'}">← Back</button></div>
@@ -1860,6 +1905,13 @@ function renderSettings(){
     <div class="field">
       <label class="field-label">Accent color</label>
       <div class="swatches">${swatches}</div>
+    </div>
+    <div class="field">
+      <label class="field-label">Library</label>
+      <button class="library-settings-toggle" type="button" data-toggle-library-ratings role="switch" aria-checked="${state.settings.showLibraryRatings}">
+        <span class="library-settings-toggle-copy"><span class="library-settings-toggle-title">Show ratings in your library</span><span class="library-settings-toggle-help">Display rating emoji at the right of your list rows.</span></span>
+        <span class="library-rating-toggle-track" aria-hidden="true"></span>
+      </button>
     </div>
 
     <div class="divider"></div>
@@ -2242,6 +2294,11 @@ async function toggleSeasonWatched(idx){
   const a=activeLibrary().find(x=>x.id===state.detailId);if(!a||state.previewMode)return;const s=a.seasons[idx];if(!s)return;
   s.watched=!s.watched;await saveActiveItem(a);render();
 }
+function setLibraryView(mode){
+  if (mode !== 'list' && mode !== 'grid') return;
+  state.libraryView = mode;
+  render();
+}
 async function toggleLibraryRatings(){
   const previous = state.settings.showLibraryRatings;
   state.settings.showLibraryRatings = !previous;
@@ -2591,6 +2648,9 @@ function wireViewEvents(){
   });
   const libraryRatingsToggle = main.querySelector('[data-toggle-library-ratings]');
   if (libraryRatingsToggle) libraryRatingsToggle.addEventListener('click', toggleLibraryRatings);
+  main.querySelectorAll('[data-set-library-view]').forEach(el => el.addEventListener('click', () => {
+    setLibraryView(el.getAttribute('data-set-library-view'));
+  }));
 
   main.querySelectorAll('[data-friend-media-tab]').forEach(el => el.addEventListener('click', () => {
     state.friendLibrary.activeTab = el.getAttribute('data-friend-media-tab');
