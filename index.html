@@ -490,11 +490,14 @@
   color: #111;
   border-color: #fff;
 }
-#screenshelf-auth-gate .auth-email-form {
+#screenshelf-auth-gate .auth-email-form,
+#screenshelf-auth-gate .auth-reset-form,
+#screenshelf-auth-gate .auth-verification {
   display: none;
   margin-top: 8px;
 }
-#screenshelf-auth-gate .auth-email-form input {
+#screenshelf-auth-gate .auth-email-form input,
+#screenshelf-auth-gate .auth-reset-form input {
   width: 100%;
   padding: 14px;
   margin-top: 10px;
@@ -514,19 +517,43 @@
 #screenshelf-auth-gate .auth-email-actions .auth-btn {
   margin-top: 10px;
 }
+#screenshelf-auth-gate .auth-link,
 #screenshelf-auth-gate .auth-back {
   background: transparent;
   border: 0;
-  color: #9b9b9f;
+  color: #bdbdc2;
   margin-top: 14px;
   cursor: pointer;
+  font: inherit;
+}
+#screenshelf-auth-gate .auth-link {
+  color: #e3a23b;
+  font-size: 13px;
+}
+#screenshelf-auth-gate .auth-panel-title {
+  margin: 4px 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+#screenshelf-auth-gate .auth-panel-copy {
+  margin: 0;
+  color: #b9b9bd;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+#screenshelf-auth-gate .auth-panel-email {
+  color: #fff;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 #screenshelf-auth-gate .auth-message {
   min-height: 20px;
   margin-top: 14px;
   color: #ff8f8f;
   font-size: 13px;
+  line-height: 1.45;
 }
+#screenshelf-auth-gate .auth-message.success { color: #9dce96; }
 #screenshelf-auth-gate .auth-loading {
   display: none;
   color: #9b9b9f;
@@ -552,8 +579,26 @@
         <button class="auth-btn" type="submit" id="auth-signin">Sign In</button>
         <button class="auth-btn" type="button" id="auth-create">Create Account</button>
       </div>
+      <button class="auth-link" type="button" id="auth-forgot-password">Forgot password?</button><br>
       <button class="auth-back" type="button" id="auth-back">← Back</button>
     </form>
+
+    <form class="auth-reset-form" id="auth-reset-form">
+      <div class="auth-panel-title">Reset your password</div>
+      <p class="auth-panel-copy">Enter your email and we’ll send a secure password-reset link.</p>
+      <input id="auth-reset-email" type="email" autocomplete="email" placeholder="Email" required>
+      <button class="auth-btn" type="submit" id="auth-send-reset">Send reset link</button><br>
+      <button class="auth-back" type="button" id="auth-reset-back">← Back to sign in</button>
+    </form>
+
+    <div class="auth-verification" id="auth-verification">
+      <div class="auth-panel-title">Verify your email</div>
+      <p class="auth-panel-copy" id="auth-verification-copy"></p>
+      <p class="auth-panel-email" id="auth-verification-email"></p>
+      <button class="auth-btn" type="button" id="auth-check-verification">I’ve verified — continue</button>
+      <button class="auth-link" type="button" id="auth-resend-verification">Send verification email</button><br>
+      <button class="auth-back" type="button" id="auth-verification-signout">Use a different account</button>
+    </div>
 
     <div class="auth-loading" id="auth-loading">Signing in…</div>
     <div class="auth-message" id="auth-message"></div>
@@ -589,6 +634,9 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  reload,
   onAuthStateChanged,
   signOut
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
@@ -637,14 +685,27 @@ window.ScreenShelfFirebase = {
 ========================================================= */
 (function setupFirebaseAuth(){
   const gate = document.getElementById('screenshelf-auth-gate');
+  const subtitle = document.getElementById('auth-subtitle');
   const choice = document.getElementById('auth-choice');
   const emailForm = document.getElementById('auth-email-form');
+  const resetForm = document.getElementById('auth-reset-form');
+  const verification = document.getElementById('auth-verification');
   const googleBtn = document.getElementById('auth-google');
   const emailBtn = document.getElementById('auth-email');
   const backBtn = document.getElementById('auth-back');
   const emailInput = document.getElementById('auth-email-input');
   const passwordInput = document.getElementById('auth-password-input');
+  const signInBtn = document.getElementById('auth-signin');
   const createBtn = document.getElementById('auth-create');
+  const forgotPasswordBtn = document.getElementById('auth-forgot-password');
+  const resetEmailInput = document.getElementById('auth-reset-email');
+  const sendResetBtn = document.getElementById('auth-send-reset');
+  const resetBackBtn = document.getElementById('auth-reset-back');
+  const verificationCopy = document.getElementById('auth-verification-copy');
+  const verificationEmail = document.getElementById('auth-verification-email');
+  const checkVerificationBtn = document.getElementById('auth-check-verification');
+  const resendVerificationBtn = document.getElementById('auth-resend-verification');
+  const verificationSignOutBtn = document.getElementById('auth-verification-signout');
   const loading = document.getElementById('auth-loading');
   const message = document.getElementById('auth-message');
 
@@ -652,44 +713,92 @@ window.ScreenShelfFirebase = {
     googleBtn.disabled = busy;
     emailBtn.disabled = busy;
     backBtn.disabled = busy;
+    signInBtn.disabled = busy;
     createBtn.disabled = busy;
-    document.getElementById('auth-signin').disabled = busy;
+    forgotPasswordBtn.disabled = busy;
+    sendResetBtn.disabled = busy;
+    resetBackBtn.disabled = busy;
+    checkVerificationBtn.disabled = busy;
+    resendVerificationBtn.disabled = busy;
+    verificationSignOutBtn.disabled = busy;
     loading.style.display = busy ? 'block' : 'none';
   }
 
-  function showMessage(msg){
-    message.textContent = msg || '';
+  function showMessage(text, tone = 'error'){
+    message.textContent = text || '';
+    message.classList.toggle('success', !!text && tone === 'success');
+  }
+
+  function authActionSettings(){
+    return { url: window.location.href, handleCodeInApp: false };
+  }
+
+  function requiresEmailVerification(user){
+    return !!(user && user.email && !user.emailVerified);
   }
 
   function showEmailForm(){
+    gate.style.display = 'flex';
+    subtitle.textContent = 'Sign in with your email';
     choice.style.display = 'none';
+    resetForm.style.display = 'none';
+    verification.style.display = 'none';
     emailForm.style.display = 'block';
     showMessage('');
     emailInput.focus();
   }
 
+  function showPasswordReset(){
+    gate.style.display = 'flex';
+    subtitle.textContent = 'Password help';
+    choice.style.display = 'none';
+    emailForm.style.display = 'none';
+    verification.style.display = 'none';
+    resetForm.style.display = 'block';
+    resetEmailInput.value = emailInput.value.trim();
+    showMessage('');
+    resetEmailInput.focus();
+  }
+
+  function showVerification(user, verificationEmailWasSent = false){
+    gate.style.display = 'flex';
+    subtitle.textContent = 'One quick security step';
+    choice.style.display = 'none';
+    emailForm.style.display = 'none';
+    resetForm.style.display = 'none';
+    verification.style.display = 'block';
+    verificationEmail.textContent = user && user.email ? user.email : '';
+    verificationCopy.textContent = verificationEmailWasSent
+      ? 'We sent a verification link to this address. Open it, then come back here to continue.'
+      : 'Confirm that you own this address before using ScreenShelf. Check your inbox, or send a fresh verification link.';
+  }
+
   function showChoices(){
+    gate.style.display = 'flex';
+    subtitle.textContent = 'Your personal anime and series tracker';
     choice.style.display = 'block';
     emailForm.style.display = 'none';
+    resetForm.style.display = 'none';
+    verification.style.display = 'none';
     showMessage('');
   }
 
   function showAuthLoading(){
     gate.style.display = 'flex';
+    subtitle.textContent = 'Checking your session…';
     choice.style.display = 'none';
     emailForm.style.display = 'none';
+    resetForm.style.display = 'none';
+    verification.style.display = 'none';
     loading.textContent = 'Checking your session…';
     loading.style.display = 'block';
     showMessage('');
   }
 
   function showLoginChoices(){
-    gate.style.display = 'flex';
-    choice.style.display = 'block';
-    emailForm.style.display = 'none';
+    showChoices();
     loading.textContent = 'Signing in…';
     loading.style.display = 'none';
-    showMessage('');
   }
 
   function friendlyAuthError(error){
@@ -698,11 +807,30 @@ window.ScreenShelfFirebase = {
       case 'auth/email-already-in-use': return 'An account already exists with this email.';
       case 'auth/weak-password': return 'Password must be at least 6 characters.';
       case 'auth/invalid-email': return 'Please enter a valid email address.';
+      case 'auth/too-many-requests': return 'Too many attempts. Please wait a little and try again.';
+      case 'auth/network-request-failed': return 'Network error. Check your connection and try again.';
       case 'auth/popup-closed-by-user': return 'Google sign-in was cancelled.';
       case 'auth/popup-blocked': return 'Your browser blocked the Google sign-in popup.';
       case 'auth/unauthorized-domain': return 'This website is not authorized for Firebase sign-in yet.';
+      case 'auth/unauthorized-continue-uri': return 'This website is not authorized for Firebase email links yet.';
+      case 'auth/invalid-continue-uri': return 'This website is not configured correctly for Firebase email links yet.';
       default: return error.message || 'Sign-in failed. Please try again.';
     }
+  }
+
+  function startVerifiedSession(user){
+    gate.style.display = 'none';
+    try {
+      window.ScreenShelfFirebase.startCloudSync(user);
+    } catch(error) {
+      console.error('Cloud sync failed to start:', error);
+    }
+  }
+
+  async function sendVerification(user){
+    await sendEmailVerification(user, authActionSettings());
+    showVerification(user, true);
+    showMessage('Verification email sent. Check your inbox and spam folder.', 'success');
   }
 
   googleBtn.addEventListener('click', async () => {
@@ -721,6 +849,8 @@ window.ScreenShelfFirebase = {
 
   emailBtn.addEventListener('click', showEmailForm);
   backBtn.addEventListener('click', showChoices);
+  forgotPasswordBtn.addEventListener('click', showPasswordReset);
+  resetBackBtn.addEventListener('click', showEmailForm);
 
   emailForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -745,13 +875,88 @@ window.ScreenShelfFirebase = {
     if (!emailForm.reportValidity()) return;
     setBusy(true);
     try {
-      await createUserWithEmailAndPassword(
+      const credential = await createUserWithEmailAndPassword(
         firebaseAuth,
         emailInput.value.trim(),
         passwordInput.value
       );
+      await sendVerification(credential.user);
     } catch(error) {
       console.error('Account creation failed:', error);
+      showMessage(friendlyAuthError(error));
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  resetForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!resetForm.reportValidity()) return;
+    showMessage('');
+    setBusy(true);
+    try {
+      await sendPasswordResetEmail(firebaseAuth, resetEmailInput.value.trim(), authActionSettings());
+      showMessage('If an email/password account exists for that address, a password-reset link has been sent. Check your inbox and spam folder.', 'success');
+    } catch(error) {
+      // Do not reveal whether an address is registered when the Firebase
+      // project has email-enumeration protection disabled.
+      if (error.code === 'auth/user-not-found') {
+        showMessage('If an email/password account exists for that address, a password-reset link has been sent. Check your inbox and spam folder.', 'success');
+      } else {
+        console.error('Password reset email failed:', error);
+        showMessage(friendlyAuthError(error));
+      }
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  resendVerificationBtn.addEventListener('click', async () => {
+    const user = firebaseAuth.currentUser;
+    if (!user) return showLoginChoices();
+    showMessage('');
+    setBusy(true);
+    try {
+      await sendVerification(user);
+    } catch(error) {
+      console.error('Verification email failed:', error);
+      showMessage(friendlyAuthError(error));
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  checkVerificationBtn.addEventListener('click', async () => {
+    const user = firebaseAuth.currentUser;
+    if (!user) return showLoginChoices();
+    showMessage('');
+    setBusy(true);
+    try {
+      await reload(user);
+      if (requiresEmailVerification(user)) {
+        showVerification(user);
+        showMessage('Your email is not verified yet. Open the link from the email, then try again.');
+        return;
+      }
+      // Refresh the ID token so Firestore Rules immediately receive the
+      // updated email_verified claim before private data listeners start.
+      await user.getIdToken(true);
+      startVerifiedSession(user);
+    } catch(error) {
+      console.error('Verification refresh failed:', error);
+      showMessage(friendlyAuthError(error));
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  verificationSignOutBtn.addEventListener('click', async () => {
+    showMessage('');
+    setBusy(true);
+    try {
+      await signOut(firebaseAuth);
+    } catch(error) {
+      console.error('Verification sign-out failed:', error);
       showMessage(friendlyAuthError(error));
     } finally {
       setBusy(false);
@@ -761,13 +966,13 @@ window.ScreenShelfFirebase = {
   showAuthLoading();
 
   onAuthStateChanged(firebaseAuth, (user) => {
-    if (user) {
-      gate.style.display = 'none';
-      try {
-        window.ScreenShelfFirebase.startCloudSync(user);
-      } catch(error) {
-        console.error('Cloud sync failed to start:', error);
-      }
+    if (requiresEmailVerification(user)) {
+      // Do not attach any Firestore listeners until the user controls the
+      // email address used for this email/password account.
+      try { window.ScreenShelfFirebase.stopCloudSync(); } catch(error) { console.error('Cloud sync teardown failed:', error); }
+      showVerification(user);
+    } else if (user) {
+      startVerifiedSession(user);
     } else {
       try { window.ScreenShelfFirebase.stopCloudSync(); } catch(error) { console.error('Cloud sync teardown failed:', error); }
       showLoginChoices();
