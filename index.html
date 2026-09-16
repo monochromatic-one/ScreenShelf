@@ -2420,14 +2420,31 @@ function openDeleteSheet(){
 ========================================================= */
 async function goHome(){ state.view='home'; state.previewMode=false; render(); }
 function goSettings(){ state.view='settings'; render(); }
-function goSearch(){ state.view='search'; render(); setTimeout(()=>{ const i=document.getElementById('search-input'); if(i) i.focus(); },0); }
+function resetSearchState(){
+  clearTimeout(searchDebounce);
+  searchRequestVersion += 1;
+  state.searchQuery = '';
+  state.searchResults = [];
+  state.searchLoading = false;
+  state.searchError = '';
+}
+function goSearch({ fresh = true } = {}){
+  if (fresh) resetSearchState();
+  state.view='search';
+  render();
+  setTimeout(()=>{ const input=document.getElementById('search-input'); if(input){ input.focus(); input.setSelectionRange(input.value.length, input.value.length); } },0);
+}
 
+let searchDebounce = null;
+let searchRequestVersion = 0;
 async function runSearch(q){
+  const requestVersion = ++searchRequestVersion;
   state.searchQuery=q;
   if(!q.trim()){state.searchResults=[];state.searchError='';updateSearchResults();return;}
   state.searchLoading=true;updateSearchResults();
   try{
     const data=await searchTv(q.trim());
+    if (requestVersion !== searchRequestVersion) return;
     state.searchResults=(data.results||[]).map(r=>{
       const id = normalizeTmdbId(r.id);
       const name = normalizeText(r.name, MAX_LIBRARY_TITLE_LENGTH);
@@ -2436,10 +2453,13 @@ async function runSearch(q){
       return { id, name, poster_path: normalizeTmdbImagePath(r.poster_path) };
     }).filter(Boolean);
     state.searchError='';
-  }catch(err){state.searchError=err.message||'Something went wrong.';state.searchResults=[];}
+  }catch(err){
+    if (requestVersion !== searchRequestVersion) return;
+    state.searchError=err.message||'Something went wrong.';state.searchResults=[];
+  }
+  if (requestVersion !== searchRequestVersion) return;
   state.searchLoading=false;updateSearchResults();
 }
-let searchDebounce = null;
 function onSearchInput(v){
   clearTimeout(searchDebounce);
   searchDebounce = setTimeout(()=> runSearch(v), 380);
@@ -2886,7 +2906,7 @@ function wireViewEvents(){
   main.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', () => {
     const to = el.getAttribute('data-go');
     if (to === 'home') goHome();
-    else if (to === 'search') goSearch();
+    else if (to === 'search') goSearch({ fresh:false });
     else if (to === 'settings') goSettings();
     else if (to === 'friend-library') { state.view = 'friendLibrary'; render(); }
   }));
