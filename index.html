@@ -194,6 +194,9 @@
     padding:7px 14px; border-radius:999px; font-size:12.5px; font-weight:700; color:var(--muted);
   }
   .detail-stats b{ color:var(--text); }
+  .tmdb-score{ display:flex; align-items:center; justify-content:center; gap:5px; margin-top:9px; font-size:12px; color:var(--muted); font-weight:700; }
+  .tmdb-score-mark{ color:#01b4e4; font-size:10px; font-weight:900; letter-spacing:-.35px; }
+  .tmdb-score-value{ color:var(--text); }
   .detail-tmdb-status{ margin-top:9px; font-size:12.5px; color:var(--muted); }
   .detail-actions{ padding:8px 4px 22px; display:flex; flex-direction:column; gap:10px; }
   .status-pill{
@@ -1123,6 +1126,10 @@ function boundedInteger(value, min, max, fallback){
     : (typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : NaN);
   return Number.isSafeInteger(number) && number >= min && number <= max ? number : fallback;
 }
+function boundedDecimal(value, min, max, fallback){
+  const number = typeof value === 'number' ? value : NaN;
+  return Number.isFinite(number) && number >= min && number <= max ? number : fallback;
+}
 function normalizeTmdbId(value){ return boundedInteger(value, 1, 2147483647, null); }
 function normalizeTmdbImagePath(value){
   if (typeof value !== 'string') return null;
@@ -1152,6 +1159,8 @@ function normalizeTmdbMeta(value, seasons){
     numberOfEpisodes: boundedInteger(meta.numberOfEpisodes, 0, 100000, 0),
     tmdbStatus: normalizeText(meta.tmdbStatus, 120),
     episodeRuntime: boundedInteger(meta.episodeRuntime, 1, 1440, null),
+    tmdbVoteAverage: boundedDecimal(meta.tmdbVoteAverage, 0, 10, null),
+    tmdbVoteCount: boundedInteger(meta.tmdbVoteCount, 0, 2147483647, null),
   };
 }
 function normalizeLibraryItem(value, mediaType, fallbackTmdbId){
@@ -1793,6 +1802,8 @@ function tmdbSeriesToAnimeShape(tv){
       numberOfEpisodes: tv.number_of_episodes || 0,
       tmdbStatus: tv.status || '',
       episodeRuntime: episodeRuntimeFromTv(tv),
+      tmdbVoteAverage: boundedDecimal(tv.vote_average, 0, 10, null),
+      tmdbVoteCount: boundedInteger(tv.vote_count, 0, 2147483647, null),
     },
   };
 }
@@ -2005,6 +2016,19 @@ function updateSearchResults(){
 /* =========================================================
    Rendering: Detail / Preview
 ========================================================= */
+function formatVoteCount(count){
+  if (count >= 1000000) return (count / 1000000).toFixed(count >= 10000000 ? 0 : 1).replace(/\.0$/, '') + 'M';
+  if (count >= 1000) return (count / 1000).toFixed(count >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'K';
+  return String(count);
+}
+function tmdbScoreMarkup(meta){
+  const score = boundedDecimal(meta && meta.tmdbVoteAverage, 0, 10, null);
+  const votes = boundedInteger(meta && meta.tmdbVoteCount, 0, 2147483647, null);
+  if (score == null || !votes) return '';
+  const scoreText = score.toFixed(1) + '/10';
+  const voteText = formatVoteCount(votes) + ' votes';
+  return `<div class="tmdb-score" aria-label="TMDB community score ${scoreText}, ${voteText}" title="TMDB community score"><span class="tmdb-score-mark" aria-hidden="true">TMDB</span><span class="tmdb-score-value">${scoreText}</span><span aria-hidden="true">•</span><span>${voteText}</span></div>`;
+}
 function renderDetail(){
   if(state.detailLoading)return `<div class="view-head"><button class="back-btn" data-go="${state.previewMode?'search':'home'}">← Back</button></div><div class="loading-block"><div class="spinner">🌀</div><div>Loading from TMDB…</div></div>`;
   const lib=activeLibrary(),map=activeStatusMap(),a=state.previewMode?state.previewTmdb:lib.find(x=>x.id===state.detailId);
@@ -2017,11 +2041,12 @@ function renderDetail(){
   else if(state.previewMode&&owned){const st=map[owned.status]||map.planned;actions=`<div class="detail-actions"><div class="status-pill status-${owned.status}"><span class="status-dot"></span>${st.label} ${st.emoji}</div><button class="btn btn-ghost btn-block" data-open-detail="${escapeHtml(owned.id)}">View in library</button></div>`;}
   else{const st=map[a.status]||map.planned;const rating=(a.rating&&RATING_MAP[a.rating])?RATING_MAP[a.rating]:null;
     actions=`<div class="detail-actions"><div class="detail-meta-row"><div class="status-pill status-${a.status}"><span class="status-dot"></span>${st.label} ${st.emoji}</div><button class="rating-pill" data-open-rating="1">Rating: <span class="rating-emoji">${rating ? `${rating.emoji} ${escapeHtml(rating.label)}` : RATING_UNSET_EMOJI}</span></button></div><button class="btn btn-ghost btn-block" data-change-status="1">Change status</button></div>`;}
+  const tmdbScore = tmdbScoreMarkup(a.tmdbMeta);
   const tmdbStatus=a.tmdbMeta&&a.tmdbMeta.tmdbStatus?`<div class="detail-tmdb-status">TMDB status: ${escapeHtml(a.tmdbMeta.tmdbStatus)}</div>`:'';
   const del=!state.previewMode?`<div class="delete-fab"><button class="btn btn-danger btn-sm" data-delete-anime="1">🗑️ Remove from library</button></div>`:'';
   return `<div class="view-head"><button class="back-btn" data-go="${state.previewMode?'search':'home'}">← Back</button></div>
     <div class="detail-hero"><h1 class="detail-title">${escapeHtml(a.title)}</h1><div class="detail-poster-wrap"><img class="detail-poster" src="${posterSrc(a.poster)}" alt=""></div>
-    <div class="detail-stats"><b>${seasons.length}</b>&nbsp;seasons&nbsp;&nbsp;·&nbsp;&nbsp;<b>${totalEpisodes}</b>&nbsp;episodes</div>${tmdbStatus}</div>
+    <div class="detail-stats"><b>${seasons.length}</b>&nbsp;seasons&nbsp;&nbsp;·&nbsp;&nbsp;<b>${totalEpisodes}</b>&nbsp;episodes</div>${tmdbScore}${tmdbStatus}</div>
     ${actions}<div class="section-label">Seasons</div><div id="season-list">${seasonRows}</div>${del}`;
 }
 function renderSeasonRow(s, idx){
@@ -2478,7 +2503,31 @@ async function openPreview(tmdbId){
   catch(err){showToast(err.message||'Could not load details.');state.view='search';state.previewMode=false;render();return;}
   state.detailLoading=false;render();
 }
-async function openDetail(localId){state.view='detail';state.previewMode=false;state.detailId=localId;render();}
+async function hydrateDetailTmdbScore(localId, mediaType){
+  if (!hasApiKey()) return;
+  const library = mediaType === 'show' ? state.showLibrary : state.library;
+  const initial = library.find(item => item.id === localId);
+  if (!initial || (initial.tmdbMeta && initial.tmdbMeta.tmdbVoteAverage != null && initial.tmdbMeta.tmdbVoteCount != null)) return;
+  try {
+    const tv = await getTvDetails(initial.tmdbId);
+    const score = boundedDecimal(tv.vote_average, 0, 10, null);
+    const votes = boundedInteger(tv.vote_count, 0, 2147483647, null);
+    const current = library.find(item => item.id === localId);
+    if (!current || current.tmdbId !== initial.tmdbId) return;
+    if (current.tmdbMeta.tmdbVoteAverage === score && current.tmdbMeta.tmdbVoteCount === votes) return;
+    current.tmdbMeta = { ...current.tmdbMeta, tmdbVoteAverage:score, tmdbVoteCount:votes };
+    await saveActiveItemForType(current, mediaType);
+    if (state.view === 'detail' && !state.previewMode && state.detailId === localId) render();
+  } catch(error) {
+    // Missing score data must never prevent an existing library title opening.
+    console.warn('Could not load TMDB score for', initial.title, error);
+  }
+}
+async function openDetail(localId){
+  state.view='detail';state.previewMode=false;state.detailId=localId;render();
+  const item = activeLibrary().find(value => value.id === localId);
+  if (item) void hydrateDetailTmdbScore(localId, item.mediaType);
+}
 async function addPreviewToLibrary(){
   const src=state.previewTmdb;if(!src)return;const lib=activeLibrary();
   if(lib.find(a=>a.tmdbId===src.tmdbId)){showToast('Already in your library.');return;}
@@ -2788,8 +2837,10 @@ async function refreshComebacks(){
         const currentItem = currentLibrary.find(x=>x.id===a.id);
         if(!currentItem || deletingLibraryIds.has(a.id)) continue;
 
-        const prev=currentItem.tmdbMeta||{numberOfSeasons:0,numberOfEpisodes:0,tmdbStatus:''};
+        const prev=currentItem.tmdbMeta||{numberOfSeasons:0,numberOfEpisodes:0,tmdbStatus:'',tmdbVoteAverage:null,tmdbVoteCount:null};
         const ns=tv.number_of_seasons||0,ne=tv.number_of_episodes||0,st=tv.status||'';
+        const voteAverage = boundedDecimal(tv.vote_average, 0, 10, null);
+        const voteCount = boundedInteger(tv.vote_count, 0, 2147483647, null);
         const newContent=ns>prev.numberOfSeasons||ne>prev.numberOfEpisodes;
         const returned=prev.tmdbStatus&&/ended|canceled|cancelled/i.test(prev.tmdbStatus)&&st&&/returning/i.test(st);
 
@@ -2811,7 +2862,8 @@ async function refreshComebacks(){
           currentItem.seasons=fresh.seasons.map(x=>Object.assign(x,{watched:watched.get(x.seasonNumber)||false}));
         }
 
-        const metaChanged = ns!==prev.numberOfSeasons || ne!==prev.numberOfEpisodes || st!==prev.tmdbStatus;
+        const metaChanged = ns!==prev.numberOfSeasons || ne!==prev.numberOfEpisodes || st!==prev.tmdbStatus
+          || voteAverage !== prev.tmdbVoteAverage || voteCount !== prev.tmdbVoteCount;
         if(metaChanged){
           // No await occurs between this final guard and the Firestore write.
           // If deletion starts later, its deleteDoc is queued after this write.
@@ -2819,7 +2871,7 @@ async function refreshComebacks(){
           const stillExists=liveLibrary.some(x=>x.id===currentItem.id);
           if(!stillExists || deletingLibraryIds.has(currentItem.id)) continue;
 
-          currentItem.tmdbMeta={numberOfSeasons:ns,numberOfEpisodes:ne,tmdbStatus:st,episodeRuntime:episodeRuntimeFromTv(tv)};
+          currentItem.tmdbMeta={numberOfSeasons:ns,numberOfEpisodes:ne,tmdbStatus:st,episodeRuntime:episodeRuntimeFromTv(tv),tmdbVoteAverage:voteAverage,tmdbVoteCount:voteCount};
           await saveActiveItemForType(currentItem,currentItem.mediaType==='show'?'show':'anime');
         }
       }catch(e){ console.warn('refreshComebacks failed for', a.title, e); }
@@ -3045,5 +3097,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3c2ef92a9b4c8d9',t:'MTc4OTU5Mzg0Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
