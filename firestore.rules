@@ -82,7 +82,7 @@ service cloud.firestore {
 
     function validTmdbMeta(meta) {
       return meta is map
-        && meta.keys().hasOnly(['numberOfSeasons', 'numberOfEpisodes', 'tmdbStatus', 'episodeRuntime'])
+        && meta.keys().hasOnly(['numberOfSeasons', 'numberOfEpisodes', 'tmdbStatus', 'episodeRuntime', 'tmdbVoteAverage', 'tmdbVoteCount'])
         && meta.keys().hasAll(['numberOfSeasons', 'numberOfEpisodes', 'tmdbStatus', 'episodeRuntime'])
         && meta.numberOfSeasons is int
         && meta.numberOfSeasons >= 0
@@ -94,7 +94,13 @@ service cloud.firestore {
         && meta.tmdbStatus.size() <= 120
         && (meta.episodeRuntime == null || (meta.episodeRuntime is int
           && meta.episodeRuntime >= 1
-          && meta.episodeRuntime <= 1440));
+          && meta.episodeRuntime <= 1440))
+        && (meta.tmdbVoteAverage == null || (meta.tmdbVoteAverage is number
+          && meta.tmdbVoteAverage >= 0
+          && meta.tmdbVoteAverage <= 10))
+        && (meta.tmdbVoteCount == null || (meta.tmdbVoteCount is int
+          && meta.tmdbVoteCount >= 0
+          && meta.tmdbVoteCount <= 2147483647));
     }
 
     // Rules cannot iterate a list of season maps. The client separately
