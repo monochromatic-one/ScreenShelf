@@ -57,7 +57,7 @@ service cloud.firestore {
 
     function validTmdbMeta(meta) {
       return meta is map
-        && meta.keys().hasOnly(['numberOfSeasons', 'numberOfEpisodes', 'tmdbStatus', 'episodeRuntime', 'tmdbVoteAverage', 'tmdbVoteCount', 'tmdbRefreshedAt'])
+        && meta.keys().hasOnly(['numberOfSeasons', 'numberOfEpisodes', 'tmdbStatus', 'episodeRuntime', 'tmdbVoteAverage', 'tmdbVoteCount', 'genres', 'tmdbRefreshedAt'])
         && meta.keys().hasAll(['numberOfSeasons', 'numberOfEpisodes', 'tmdbStatus', 'episodeRuntime'])
         && meta.numberOfSeasons is int
         && meta.numberOfSeasons >= 0
@@ -76,6 +76,9 @@ service cloud.firestore {
         && (meta.tmdbVoteCount == null || (meta.tmdbVoteCount is int
           && meta.tmdbVoteCount >= 0
           && meta.tmdbVoteCount <= 2147483647))
+        // Firestore Rules cannot inspect every list member. The client
+        // normalizes genre names; this bounds the public metadata field.
+        && (!('genres' in meta) || meta.genres == null || (meta.genres is list && meta.genres.size() <= 20))
         && (meta.tmdbRefreshedAt == null || (meta.tmdbRefreshedAt is int
           && meta.tmdbRefreshedAt >= 0
           && meta.tmdbRefreshedAt <= 4102444800000));
