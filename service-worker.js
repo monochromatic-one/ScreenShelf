@@ -1,4 +1,4 @@
-const CACHE = 'screenshelf-shell-v6';
+const CACHE = 'screenshelf-shell-v9';
 const IMAGE_CACHE = 'screenshelf-images-v1';
 const FIREBASE_SDK_URLS = [
   'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js',

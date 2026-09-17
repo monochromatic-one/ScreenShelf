@@ -116,8 +116,14 @@
   }
   .anime-title{ font-size:14.5px; font-weight:600; line-height:1.3; }
   .own-library-row .anime-title-wrap{ min-width:0; flex:1; }
+  .own-library-row{ position:relative; }
   .own-library-row .anime-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .library-rating{ width:15px; flex:none; color:var(--muted); font-size:15px; line-height:1; text-align:center; }
+  .title-update-dot{
+    position:absolute; z-index:2; width:9px; height:9px; border:1.5px solid var(--surface); border-radius:50%;
+    background:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.35);
+  }
+  .own-library-row .title-update-dot{ top:8px; right:5px; }
   .library-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:10px; padding:0 4px; }
   .library-grid-tile{
     position:relative; display:block; min-width:0; padding:0; overflow:hidden; text-align:left;
@@ -138,6 +144,8 @@
     background:color-mix(in srgb, var(--surface) 90%, transparent); box-shadow:0 2px 6px rgba(0,0,0,.2);
     font-size:14px; line-height:1;
   }
+  .library-grid-tile .title-update-dot{ top:6px; right:6px; }
+  .library-grid-tile.has-title-update .library-grid-rating{ right:22px; }
 
   /* ---------- Empty state ---------- */
   .empty-block{ padding:56px 10px; text-align:center; }
@@ -221,6 +229,24 @@
     display:flex; align-items:center; justify-content:center; font-size:13px; background:var(--surface);
   }
   .season-check.checked{ background:var(--accent); border-color:var(--accent); color:var(--accent-text); }
+  .tmdb-title-link{
+    display:inline-flex; align-items:center; justify-content:center; margin-top:10px; padding:6px 10px;
+    border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--accent);
+    font-size:11.5px; font-weight:800; text-decoration:none;
+  }
+  .tmdb-title-link:hover{ background:var(--surface-2); }
+  .companion-list{ border-top:1px solid var(--border); }
+  .companion-row{ display:flex; align-items:center; gap:10px; min-height:48px; border-bottom:1px solid var(--border); padding:7px 4px; }
+  .companion-toggle{ display:flex; align-items:center; gap:10px; min-width:0; flex:1; padding:3px 0; border:0; background:none; color:var(--text); text-align:left; }
+  .companion-title{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:600; }
+  .companion-toggle.is-watched .companion-title{ color:var(--muted); text-decoration:line-through; }
+  .companion-remove{ width:30px; height:30px; flex:none; padding:0; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--muted); font-size:18px; line-height:1; }
+  .companion-remove:hover{ border-color:var(--danger); color:var(--danger); background:color-mix(in srgb, var(--danger) 8%, transparent); }
+  .companion-empty{ padding:12px 4px; color:var(--muted); font-size:12.5px; line-height:1.45; }
+  .companion-add{ display:flex; gap:8px; padding:11px 0 3px; }
+  .companion-add .field-input{ min-width:0; flex:1; padding:9px 11px; }
+  .companion-add .btn{ flex:none; padding:9px 11px; }
+  .tmdb-refresh-time{ padding:24px 4px 8px; color:var(--muted); text-align:center; font-size:11.5px; line-height:1.4; }
 
   /* ---------- Settings ---------- */
   .profile-row{ display:flex; align-items:center; gap:16px; }
@@ -398,48 +424,31 @@
   .app-shell.series-mode .main,
   .app-shell.anime-mode .main{ transition:background .2s ease; }
 
-  /* ---------- Friends ---------- */
-  .friends-entry{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; text-align:left; }
-  .friends-entry-copy{ min-width:0; }
-  .friends-entry-title{ font-size:14.5px; font-weight:700; }
-  .friends-sheet-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 10px 14px; }
-  .friends-sheet-head .sheet-title{ padding:0; }
-  .friends-add-btn{ border:0; background:none; color:var(--accent); padding:4px 0; font:inherit; font-size:13px; font-weight:800; white-space:nowrap; }
-  .friend-code-box{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 10px 16px; padding:11px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; }
-  .friend-code-label{ color:var(--muted); font-size:12px; font-weight:700; }
-  .friend-code-value{ font-size:16px; font-weight:800; letter-spacing:.12em; }
-  .friend-code-copy{ border:0; border-radius:8px; padding:6px 8px; background:var(--surface); color:var(--accent); font:inherit; font-size:12px; font-weight:800; }
-  .friends-section-label{ display:block; padding:2px 10px 8px; color:var(--muted); font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
-  .friends-empty{ padding:12px 10px 18px; color:var(--muted); font-size:13px; line-height:1.45; }
-  .friend-row{ display:flex; align-items:center; gap:10px; border-top:1px solid var(--border); padding:11px 10px; }
-  .friend-row-main{ display:flex; align-items:center; gap:10px; min-width:0; flex:1; border:0; padding:0; background:none; text-align:left; color:var(--text); }
-  .friend-row-main:only-child{ cursor:default; }
-  .friend-avatar{ width:35px; height:35px; flex:none; object-fit:cover; border-radius:50%; background:var(--surface-3); border:1px solid var(--border); }
-  .friend-avatar-fallback{ display:flex; align-items:center; justify-content:center; font-size:16px; }
-  .friend-row-copy{ min-width:0; flex:1; }
-  .friend-row-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px; font-weight:700; }
-  .friend-row-note{ margin-top:2px; color:var(--muted); font-size:11.5px; }
-  .friend-row-actions{ display:flex; align-items:center; gap:6px; flex:none; }
-  .friend-mini-btn{ border:1px solid var(--border); border-radius:8px; padding:6px 8px; background:var(--surface); color:var(--text); font:inherit; font-size:11.5px; font-weight:800; }
-  .friend-mini-btn.accent{ border-color:var(--accent); background:var(--accent); color:var(--accent-text); }
-  .friend-mini-btn.danger{ color:var(--danger); }
-  .friend-add-form{ padding:0 10px 8px; }
-  .friend-code-input{ text-transform:uppercase; letter-spacing:.12em; font-weight:800; }
-  .friend-add-help{ color:var(--muted); font-size:12.5px; line-height:1.45; margin:0 0 12px; }
-  .friend-feedback{ min-height:20px; margin:10px 0 2px; font-size:12.5px; line-height:1.4; }
-  .friend-feedback.error{ color:var(--danger); }
-  .friend-feedback.success{ color:var(--accent); }
-  .friend-library-head{ align-items:center; justify-content:space-between; }
-  .friend-library-title{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .friend-library-tools{ display:flex; justify-content:flex-end; padding:0 4px 10px; }
-  .friend-library-note{ color:var(--muted); font-size:12px; text-align:center; padding:0 4px 13px; }
-  .friend-library-row .anime-title-wrap{ min-width:0; flex:1; }
-  .friend-library-row .anime-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .friend-rating{ width:15px; flex:none; color:var(--muted); font-size:15px; line-height:1; text-align:center; }
-  .friend-readonly-note{ color:var(--muted); font-size:12px; text-align:center; padding:0 4px 13px; }
+  /* ---------- ScreenShelf users ---------- */
+  .people-entry{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; text-align:left; }
+  .people-entry-copy{ min-width:0; }
+  .people-entry-title{ font-size:14.5px; font-weight:700; }
+  .people-directory-head{ align-items:center; justify-content:space-between; }
+  .people-directory-title{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .people-directory-note{ color:var(--muted); font-size:12px; line-height:1.45; text-align:center; padding:0 8px 13px; }
+  .people-count{ color:var(--muted); font-size:12px; font-weight:700; padding:0 4px 8px; }
+  .people-empty{ padding:32px 10px; color:var(--muted); font-size:13px; line-height:1.45; text-align:center; }
+  .person-row{ display:flex; align-items:center; gap:10px; border-top:1px solid var(--border); padding:11px 4px; }
+  .person-row-main{ display:flex; align-items:center; gap:10px; min-width:0; flex:1; border:0; padding:0; background:none; text-align:left; color:var(--text); }
+  .person-avatar{ width:35px; height:35px; flex:none; object-fit:cover; border-radius:50%; background:var(--surface-3); border:1px solid var(--border); }
+  .person-avatar-fallback{ display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .person-row-copy{ min-width:0; flex:1; }
+  .person-row-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px; font-weight:700; }
+  .person-row-note{ margin-top:2px; color:var(--muted); font-size:11.5px; }
+  .public-library-tools{ display:flex; justify-content:flex-end; padding:0 4px 10px; }
+  .public-library-note{ color:var(--muted); font-size:12px; text-align:center; padding:0 4px 13px; }
+  .public-library-row .anime-title-wrap{ min-width:0; flex:1; }
+  .public-library-row .anime-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .public-library-rating{ width:15px; flex:none; color:var(--muted); font-size:15px; line-height:1; text-align:center; }
+  .public-readonly-note{ color:var(--muted); font-size:12px; text-align:center; padding:0 4px 13px; }
   .season-head-readonly{ cursor:default; }
-  .friend-rating-pill{ display:inline-flex; align-items:center; gap:6px; align-self:center; padding:7px 12px; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--text); font-size:12.5px; font-weight:700; }
-  .app-shell.friend-view .topbar-actions{ visibility:hidden; pointer-events:none; }
+  .public-rating-pill{ display:inline-flex; align-items:center; gap:6px; align-self:center; padding:7px 12px; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--text); font-size:12.5px; font-weight:700; }
+  .app-shell.public-library-view .topbar-actions{ visibility:hidden; pointer-events:none; }
 
 </style>
 
@@ -653,11 +662,7 @@ import {
   setDoc,
   deleteDoc,
   serverTimestamp,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  runTransaction
+  getDocs
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 const firebaseConfig = {
   apiKey: "AIzaSyDcfuKP-nVjm6s6CMn-T4V_ck_cAtLnnf8",
@@ -1036,6 +1041,7 @@ const state = {
   avatarUploading: false,
   avatarError: '',
   notifications: [],
+  companionMovies: { itemId:null, mediaType:null, tmdbId:null, items:[], loading:false, error:'' },
   expandedStatus: null,
   view: 'home',
   detailId: null,
@@ -1049,19 +1055,8 @@ const state = {
   refreshing: false,
   sortBy: { anime: 'az', shows: 'az' },
   libraryView: 'list',
-  friends: {
-    friendCode: '',
-    loading: false,
-    error: '',
-    sheetOpen: false,
-    mode: 'list',
-    addLoading: false,
-    addMessage: null,
-    incoming: [],
-    outgoing: [],
-    list: [],
-  },
-  friendLibrary: {
+  people: { loading:false, error:'', users:[] },
+  publicLibrary: {
     uid: null,
     displayName: '',
     photoURL: '',
@@ -1070,7 +1065,7 @@ const state = {
     loading: false,
     error: '',
     activeTab: 'shows',
-    sortBy: { anime: 'az', shows: 'az' },
+    sortBy: { anime:'az', shows:'az' },
     expandedStatus: null,
     detailId: null,
   },
@@ -1092,31 +1087,25 @@ let cloudUnsubProfile = null;
 let cloudUnsubAnime = null;
 let cloudUnsubSeries = null;
 let cloudUnsubNotifications = null;
+let cloudUnsubCompanionMovies = null;
+let cloudUnsubPeopleDirectory = null;
 let hasTriggeredInitialRefresh = false;
 let deletingLibraryIds = new Set();
-let friendIdentityPromise = null;
-let friendIdentityUserId = null;
-
-const FRIEND_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const FRIEND_CODE_PATTERN = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
 
 const MAX_PROFILE_PHOTO_LENGTH = 300000;
 const MAX_LIBRARY_TITLE_LENGTH = 240;
 const MAX_SEASON_NAME_LENGTH = 160;
+const MAX_COMPANION_MOVIES = 30;
+const MAX_COMPANION_MOVIE_TITLE_LENGTH = 160;
+const MAX_TMDB_REFRESH_MILLIS = 4102444800000;
+const COMPANION_MOVIE_ID_PATTERN = /^[A-Za-z0-9_-]{1,120}$/;
 const MAX_TMDB_IMAGE_PATH_LENGTH = 255;
 const TMDB_IMAGE_PATH_PATTERN = /^\/[A-Za-z0-9._-]+$/;
 const PROFILE_PHOTO_PATTERN = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
 
 function cloudCollectionName(mediaType){ return mediaType === 'show' ? 'series' : 'anime'; }
 function cloudDocId(tmdbId){ return String(tmdbId); }
-function friendRequestId(fromUid, toUid){ return String(fromUid) + '_' + String(toUid); }
-function friendshipId(uidA, uidB){ return [String(uidA), String(uidB)].sort().join('_'); }
-function isValidFriendCode(code){ return FRIEND_CODE_PATTERN.test(String(code || '')); }
-function generateFriendCode(){
-  const values = new Uint32Array(8);
-  crypto.getRandomValues(values);
-  return Array.from(values, value => FRIEND_CODE_CHARS[value % FRIEND_CODE_CHARS.length]).join('');
-}
+function companionMoviesDocId(mediaType, tmdbId){ return (mediaType === 'show' ? 'series_' : 'anime_') + String(tmdbId); }
 function normalizeText(value, maxLength){
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 }
@@ -1161,7 +1150,25 @@ function normalizeTmdbMeta(value, seasons){
     episodeRuntime: boundedInteger(meta.episodeRuntime, 1, 1440, null),
     tmdbVoteAverage: boundedDecimal(meta.tmdbVoteAverage, 0, 10, null),
     tmdbVoteCount: boundedInteger(meta.tmdbVoteCount, 0, 2147483647, null),
+    tmdbRefreshedAt: boundedInteger(meta.tmdbRefreshedAt, 0, MAX_TMDB_REFRESH_MILLIS, null),
   };
+}
+function normalizeCompanionMovie(value){
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const id = typeof value.id === 'string' && COMPANION_MOVIE_ID_PATTERN.test(value.id) ? value.id : '';
+  const title = normalizeText(value.title, MAX_COMPANION_MOVIE_TITLE_LENGTH);
+  if (!id || !title) return null;
+  return { id, title, watched: !!value.watched };
+}
+function normalizeCompanionMovies(value){
+  const seen = new Set();
+  return (Array.isArray(value) ? value : []).slice(0, MAX_COMPANION_MOVIES)
+    .map(normalizeCompanionMovie)
+    .filter(movie => {
+      if (!movie || seen.has(movie.id)) return false;
+      seen.add(movie.id);
+      return true;
+    });
 }
 function normalizeLibraryItem(value, mediaType, fallbackTmdbId){
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -1195,18 +1202,10 @@ function publicDisplayName(){
   return (chosen || authName || 'ScreenShelf user').slice(0, 60);
 }
 function publicPhotoURL(){ return normalizeProfilePhoto(state.settings.photoURL); }
-function hasSafePublicProfile(profile){
-  return !!profile
-    && typeof profile.displayName === 'string'
-    && profile.displayName.length > 0
-    && profile.displayName.length <= 60
-    && typeof profile.photoURL === 'string'
-    && normalizeProfilePhoto(profile.photoURL) === profile.photoURL;
-}
-function friendAvatarMarkup(photoURL, name){
+function personAvatarMarkup(photoURL){
   const safePhotoURL = normalizeProfilePhoto(photoURL);
-  if (safePhotoURL) return `<img class="friend-avatar" src="${escapeHtml(safePhotoURL)}" alt="">`;
-  return `<span class="friend-avatar friend-avatar-fallback" aria-hidden="true">👤</span>`;
+  if (safePhotoURL) return `<img class="person-avatar" src="${escapeHtml(safePhotoURL)}" alt="">`;
+  return `<span class="person-avatar person-avatar-fallback" aria-hidden="true">👤</span>`;
 }
 
 function localMillis(value){
@@ -1285,75 +1284,12 @@ async function cloudSavePublicProfile(){
   }, { merge: true });
 }
 
-/* ---- Permanent Friend Code + public profile bootstrap. ----
-   A transaction claims the code document and writes the immutable code on
-   the private owner profile together. The public profile contains only the
-   two fields friends are allowed to see. */
-async function ensureFriendIdentity(){
-  if (!cloudSyncUser) return '';
-  if (friendIdentityPromise && friendIdentityUserId === cloudSyncUser.uid) return friendIdentityPromise;
-
-  const currentUser = cloudSyncUser;
-  const profileRef = doc(firebaseDb, 'users', currentUser.uid);
-  const publicProfileRef = doc(firebaseDb, 'publicProfiles', currentUser.uid);
-
-  friendIdentityUserId = currentUser.uid;
-  friendIdentityPromise = (async () => {
-    let lastError = null;
-    for (let attempt = 0; attempt < 8; attempt++){
-      const candidate = generateFriendCode();
-      try {
-        const claimedCode = await runTransaction(firebaseDb, async transaction => {
-          const profileSnap = await transaction.get(profileRef);
-          const profile = profileSnap.exists() ? profileSnap.data() : {};
-          const existingCode = isValidFriendCode(profile.friendCode) ? profile.friendCode : '';
-          const code = existingCode || candidate;
-          const codeRef = doc(firebaseDb, 'friendCodes', code);
-          const [codeSnap, publicSnap] = await Promise.all([
-            transaction.get(codeRef),
-            transaction.get(publicProfileRef),
-          ]);
-
-          if (codeSnap.exists() && codeSnap.data().uid !== currentUser.uid){
-            if (existingCode) throw new Error('FRIEND_CODE_CONFLICT');
-            throw new Error('FRIEND_CODE_COLLISION');
-          }
-
-          // Preserve an existing code forever; otherwise claim this candidate.
-          if (!codeSnap.exists()){
-            transaction.set(codeRef, { uid: currentUser.uid, createdAt: serverTimestamp() });
-          }
-          if (!existingCode){
-            transaction.set(profileRef, { friendCode: code, updatedAt: serverTimestamp() }, { merge: true });
-          }
-          if (!hasSafePublicProfile(publicSnap.exists() ? publicSnap.data() : null)){
-            transaction.set(publicProfileRef, {
-              displayName: publicDisplayName(),
-              photoURL: publicPhotoURL(),
-              updatedAt: serverTimestamp(),
-            }, { merge: true });
-          }
-          return code;
-        });
-        if (cloudSyncUser && cloudSyncUser.uid === currentUser.uid) state.friends.friendCode = claimedCode;
-        return claimedCode;
-      } catch(error) {
-        lastError = error;
-        if (error && error.message === 'FRIEND_CODE_COLLISION') continue;
-        throw error;
-      }
-    }
-    throw lastError || new Error('Could not claim a Friend Code.');
-  })();
-
-  try {
-    return await friendIdentityPromise;
-  } finally {
-    if (friendIdentityUserId === currentUser.uid){
-      friendIdentityPromise = null;
-      friendIdentityUserId = null;
-    }
-  }
+/* ---- Public directory profile bootstrap. ----
+   The directory exposes only the separate display-name/photo document; it
+   never reads a users/{uid} private profile for another account. */
+async function ensurePublicProfile(){
+  if (!cloudSyncUser) return;
+  await cloudSavePublicProfile();
 }
 
 function applyProfileSnapshot(snap){
@@ -1373,7 +1309,6 @@ function applyProfileSnapshot(snap){
       cloudSaveProfile({ photoURL }).catch(error => console.warn('Profile photo cleanup failed:', error));
     }
     if (typeof data.showLibraryRatings === 'boolean' && data.showLibraryRatings !== state.settings.showLibraryRatings){ state.settings.showLibraryRatings = data.showLibraryRatings; changed = true; }
-    if (isValidFriendCode(data.friendCode) && data.friendCode !== state.friends.friendCode){ state.friends.friendCode = data.friendCode; }
     if (publicProfileChanged) cloudSavePublicProfile().catch(error => console.warn('Public profile sync failed:', error));
     if (changed){ applyTheme(); if (state.view === 'settings' || state.view === 'home') render(); }
   }
@@ -1386,19 +1321,102 @@ function applyProfileSnapshot(snap){
 /* ---- Notifications subcollection ---- */
 function applyNotificationsSnapshot(snapshot){
   const items = [];
-  snapshot.forEach(d => { const data = d.data(); items.push({ id: d.id, title: data.title, read: !!data.read, createdAt: localMillis(data.createdAt) }); });
+  snapshot.forEach(d => {
+    const data = d.data();
+    items.push({
+      id: d.id,
+      title: normalizeText(data.title, MAX_LIBRARY_TITLE_LENGTH),
+      animeId: typeof data.animeId === 'string' ? data.animeId : '',
+      mediaType: data.mediaType === 'show' ? 'show' : (data.mediaType === 'anime' ? 'anime' : ''),
+      read: !!data.read,
+      titleSeen: !!data.titleSeen,
+      createdAt: localMillis(data.createdAt),
+    });
+  });
   state.notifications = items.sort((a,b) => b.createdAt - a.createdAt);
   updateBellBadge();
-  if (document.getElementById('overlay').classList.contains('show') && !friendIsOpen()) openNotifications();
+  if (state.view === 'home') render();
 }
 async function cloudSaveNotification(n){
   if (!cloudSyncUser) return;
   const ref = doc(firebaseDb, 'users', cloudSyncUser.uid, 'notifications', n.id);
-  await setDoc(ref, { title: n.title, read: !!n.read, createdAt: n.createdAt ? new Date(localMillis(n.createdAt)) : serverTimestamp() }, { merge: true });
+  await setDoc(ref, {
+    title: normalizeText(n.title, MAX_LIBRARY_TITLE_LENGTH),
+    animeId: typeof n.animeId === 'string' ? n.animeId : '',
+    mediaType: n.mediaType === 'show' ? 'show' : (n.mediaType === 'anime' ? 'anime' : ''),
+    read: !!n.read,
+    titleSeen: !!n.titleSeen,
+    createdAt: n.createdAt ? new Date(localMillis(n.createdAt)) : serverTimestamp(),
+  }, { merge: true });
 }
 async function cloudDeleteNotification(id){
   if (!cloudSyncUser) return;
   await deleteDoc(doc(firebaseDb, 'users', cloudSyncUser.uid, 'notifications', id));
+}
+function hasUnseenTitleUpdate(item){
+  return !!item && state.notifications.some(note => !note.titleSeen
+    && note.animeId === item.id && note.mediaType === item.mediaType);
+}
+function markTitleUpdatesSeen(item){
+  const matching = state.notifications.filter(note => !note.titleSeen
+    && note.animeId === item.id && note.mediaType === item.mediaType);
+  if (!matching.length) return;
+  matching.forEach(note => {
+    note.titleSeen = true;
+    cloudSaveNotification(note).catch(error => {
+      note.titleSeen = false;
+      console.warn('Could not clear title update indicator:', error);
+      if (state.view === 'home' || (state.view === 'detail' && state.detailId === item.id)) render();
+    });
+  });
+}
+
+/* ---- Owner-only companion-movie checklist ---- */
+function companionMoviesMatch(item){
+  const current = state.companionMovies;
+  return !!item && current.itemId === item.id && current.mediaType === item.mediaType && current.tmdbId === item.tmdbId;
+}
+function resetCompanionMovies(){
+  state.companionMovies = { itemId:null, mediaType:null, tmdbId:null, items:[], loading:false, error:'' };
+}
+function stopCompanionMoviesSync(){
+  if (cloudUnsubCompanionMovies) cloudUnsubCompanionMovies();
+  cloudUnsubCompanionMovies = null;
+  resetCompanionMovies();
+}
+function loadCompanionMovies(item){
+  stopCompanionMoviesSync();
+  if (!cloudSyncUser || !item) return;
+  const userId = cloudSyncUser.uid;
+  const source = { id:item.id, mediaType:item.mediaType, tmdbId:item.tmdbId };
+  state.companionMovies = { itemId:source.id, mediaType:source.mediaType, tmdbId:source.tmdbId, items:[], loading:true, error:'' };
+  const ref = doc(firebaseDb, 'users', userId, 'companionMovies', companionMoviesDocId(item.mediaType, item.tmdbId));
+  cloudUnsubCompanionMovies = onSnapshot(ref, snap => {
+    if (!cloudSyncUser || cloudSyncUser.uid !== userId || !companionMoviesMatch(source)) return;
+    const data = snap.exists() ? snap.data() : {};
+    state.companionMovies = { itemId:source.id, mediaType:source.mediaType, tmdbId:source.tmdbId, items:normalizeCompanionMovies(data.movies), loading:false, error:'' };
+    if (state.view === 'detail' && !state.previewMode && state.detailId === item.id) render();
+  }, error => {
+    if (!companionMoviesMatch(source)) return;
+    state.companionMovies = { itemId:source.id, mediaType:source.mediaType, tmdbId:source.tmdbId, items:[], loading:false, error:'Could not load checklist.' };
+    console.warn('Companion movie checklist sync failed:', error);
+    if (state.view === 'detail' && !state.previewMode && state.detailId === item.id) render();
+  });
+}
+async function cloudSaveCompanionMovies(item, movies){
+  if (!cloudSyncUser) throw new Error('You need to be signed in to save this checklist.');
+  const clean = normalizeCompanionMovies(movies);
+  const ref = doc(firebaseDb, 'users', cloudSyncUser.uid, 'companionMovies', companionMoviesDocId(item.mediaType, item.tmdbId));
+  await setDoc(ref, {
+    mediaType: item.mediaType,
+    tmdbId: item.tmdbId,
+    movies: clean,
+    updatedAt: serverTimestamp(),
+  });
+}
+async function cloudDeleteCompanionMovies(item){
+  if (!cloudSyncUser || !item) return;
+  await deleteDoc(doc(firebaseDb, 'users', cloudSyncUser.uid, 'companionMovies', companionMoviesDocId(item.mediaType, item.tmdbId)));
 }
 
 function startCloudSync(user){
@@ -1412,14 +1430,17 @@ function startCloudSync(user){
     snap => applyLibrarySnapshot(snap, 'series'), error => console.error('Series sync failed:', error));
   cloudUnsubNotifications = onSnapshot(collection(firebaseDb, 'users', user.uid, 'notifications'),
     snap => applyNotificationsSnapshot(snap), error => console.error('Notifications sync failed:', error));
-  ensureFriendIdentity().catch(error => console.error('Friend identity setup failed:', error));
+  ensurePublicProfile().catch(error => console.error('Public profile setup failed:', error));
 }
 function stopCloudSyncListeners(){
   if (cloudUnsubProfile) cloudUnsubProfile();
   if (cloudUnsubAnime) cloudUnsubAnime();
   if (cloudUnsubSeries) cloudUnsubSeries();
   if (cloudUnsubNotifications) cloudUnsubNotifications();
-  cloudUnsubProfile = cloudUnsubAnime = cloudUnsubSeries = cloudUnsubNotifications = null;
+  if (cloudUnsubCompanionMovies) cloudUnsubCompanionMovies();
+  if (cloudUnsubPeopleDirectory) cloudUnsubPeopleDirectory();
+  cloudUnsubProfile = cloudUnsubAnime = cloudUnsubSeries = cloudUnsubNotifications = cloudUnsubCompanionMovies = cloudUnsubPeopleDirectory = null;
+  resetCompanionMovies();
 }
 function stopCloudSync(){
   stopCloudSyncListeners();
@@ -1428,6 +1449,7 @@ function stopCloudSync(){
   state.library = [];
   state.showLibrary = [];
   state.notifications = [];
+  resetCompanionMovies();
   state.settings.apiKey = '';
   state.settings.theme = 'dark';
   state.settings.accent = ACCENTS[0];
@@ -1437,8 +1459,8 @@ function stopCloudSync(){
   state.editingProfileName = false;
   state.avatarUploading = false;
   state.avatarError = '';
-  state.friends = { friendCode:'', loading:false, error:'', sheetOpen:false, mode:'list', addLoading:false, addMessage:null, incoming:[], outgoing:[], list:[] };
-  state.friendLibrary = { uid:null, displayName:'', photoURL:'', anime:[], series:[], loading:false, error:'', activeTab:'shows', sortBy:{ anime:'az', shows:'az' }, expandedStatus:null, detailId:null };
+  resetPeopleDirectory();
+  state.publicLibrary = { uid:null, displayName:'', photoURL:'', anime:[], series:[], loading:false, error:'', activeTab:'shows', sortBy:{ anime:'az', shows:'az' }, expandedStatus:null, detailId:null };
   state.view = 'home';
   state.previewMode = false;
   state.detailId = null;
@@ -1463,6 +1485,7 @@ async function removeAnime(id){
   if (!item) return;
   deletingLibraryIds.add(id);
   try{
+    await cloudDeleteCompanionMovies(item);
     await cloudDeleteItem(item);
     state.library = state.library.filter(x => x.id !== id);
     state.showLibrary = state.showLibrary.filter(x => x.id !== id);
@@ -1478,236 +1501,94 @@ function saveActiveItemForType(a,type){ return type === 'show' ? saveShow(a) : s
 function saveNotification(n){ return cloudSaveNotification(n); }
 
 /* =========================================================
-   Friends — requests, public profiles, and read-only libraries
+   ScreenShelf user directory and public read-only libraries
 ========================================================= */
-function friendErrorMessage(error){
-  const code = error && error.message;
-  const messages = {
-    FRIEND_CODE_NOT_FOUND: 'No ScreenShelf user was found with that Friend Code.',
-    FRIEND_CODE_SELF: 'That is your own Friend Code.',
-    FRIENDS_ALREADY: 'You are already friends.',
-    REQUEST_OUTGOING: 'Your friend request is already pending.',
-    REQUEST_INCOMING: 'This person has already sent you a request. Accept it from Pending requests.',
-    FRIEND_CODE_INVALID: 'Enter a valid 8-character Friend Code.',
-    FRIENDS_OFFLINE: 'Friends needs an internet connection.',
-    REQUEST_NOT_FOUND: 'That friend request is no longer available.',
-    REQUEST_NOT_FOR_YOU: 'Only the recipient can accept this friend request.',
-    FRIEND_CODE_CONFLICT: 'Your Friend Code could not be verified. Please try again later.',
-  };
-  return messages[code] || 'That action could not be completed. Please try again.';
+function resetPeopleDirectory(){
+  state.people = { loading:false, error:'', users:[] };
 }
-
-function friendIsOpen(){ return !!state.friends.sheetOpen; }
-
-async function loadFriendsData(){
-  if (!cloudSyncUser) return;
-  state.friends.loading = true;
-  state.friends.error = '';
-  if (friendIsOpen()) renderFriendsSheet();
-
-  try {
-    if (!navigator.onLine) throw new Error('FRIENDS_OFFLINE');
-    await ensureFriendIdentity();
-    const currentUid = cloudSyncUser.uid;
-    const friendshipsRef = collection(firebaseDb, 'friendships');
-    const incomingRef = collection(firebaseDb, 'friendRequests');
-    const [incomingSnap, outgoingSnap, friendshipSnap] = await Promise.all([
-      getDocs(query(incomingRef, where('toUid', '==', currentUid))),
-      getDocs(query(incomingRef, where('fromUid', '==', currentUid))),
-      getDocs(query(friendshipsRef, where('users', 'array-contains', currentUid))),
-    ]);
-
-    state.friends.incoming = incomingSnap.docs.map(snapshot => {
-      const data = snapshot.data();
-      return {
-        id: snapshot.id,
-        fromUid: String(data.fromUid || ''),
-        toUid: String(data.toUid || ''),
-        displayName: String(data.fromDisplayName || 'ScreenShelf user'),
-        photoURL: normalizeProfilePhoto(data.fromPhotoURL),
-        createdAt: localMillis(data.createdAt),
-      };
-    }).filter(request => request.fromUid && request.toUid === currentUid);
-
-    state.friends.outgoing = outgoingSnap.docs.map(snapshot => {
-      const data = snapshot.data();
-      return {
-        id: snapshot.id,
-        fromUid: String(data.fromUid || ''),
-        toUid: String(data.toUid || ''),
-        createdAt: localMillis(data.createdAt),
-      };
-    }).filter(request => request.toUid && request.fromUid === currentUid);
-
-    const friendUids = friendshipSnap.docs.map(snapshot => {
-      const users = snapshot.data().users;
-      return Array.isArray(users) ? users.find(uid => uid !== currentUid) : '';
-    }).filter(Boolean);
-    const profiles = await Promise.all(friendUids.map(uid => getDoc(doc(firebaseDb, 'publicProfiles', uid))));
-    state.friends.list = friendUids.map((uid, index) => {
-      const profile = profiles[index];
-      const data = profile.exists() ? profile.data() : {};
-      return {
-        uid,
-        displayName: String(data.displayName || 'Deleted ScreenShelf user'),
-        photoURL: normalizeProfilePhoto(data.photoURL),
-      };
-    }).sort((a, b) => a.displayName.localeCompare(b.displayName));
-  } catch(error) {
-    console.warn('Could not load Friends:', error);
-    state.friends.error = friendErrorMessage(error);
-  } finally {
-    state.friends.loading = false;
-    if (friendIsOpen()) renderFriendsSheet();
-  }
+function stopPeopleDirectorySync(){
+  if (cloudUnsubPeopleDirectory) cloudUnsubPeopleDirectory();
+  cloudUnsubPeopleDirectory = null;
 }
-
-async function sendFriendRequest(rawCode){
+function startPeopleDirectorySync(){
   if (!cloudSyncUser) return;
-  const code = String(rawCode || '').trim().toUpperCase();
-  if (!isValidFriendCode(code)) throw new Error('FRIEND_CODE_INVALID');
-  if (!navigator.onLine) throw new Error('FRIENDS_OFFLINE');
-
-  await ensureFriendIdentity();
+  stopPeopleDirectorySync();
   const currentUid = cloudSyncUser.uid;
-  const codeSnap = await getDoc(doc(firebaseDb, 'friendCodes', code));
-  if (!codeSnap.exists() || !codeSnap.data().uid) throw new Error('FRIEND_CODE_NOT_FOUND');
-  const targetUid = String(codeSnap.data().uid);
-  if (targetUid === currentUid) throw new Error('FRIEND_CODE_SELF');
-
-  await runTransaction(firebaseDb, async transaction => {
-    const requestRef = doc(firebaseDb, 'friendRequests', friendRequestId(currentUid, targetUid));
-    const oppositeRequestRef = doc(firebaseDb, 'friendRequests', friendRequestId(targetUid, currentUid));
-    const friendshipRef = doc(firebaseDb, 'friendships', friendshipId(currentUid, targetUid));
-    const ownPublicProfileRef = doc(firebaseDb, 'publicProfiles', currentUid);
-    const [friendshipSnap, requestSnap, oppositeRequestSnap, publicProfileSnap] = await Promise.all([
-      transaction.get(friendshipRef),
-      transaction.get(requestRef),
-      transaction.get(oppositeRequestRef),
-      transaction.get(ownPublicProfileRef),
-    ]);
-
-    if (friendshipSnap.exists()) throw new Error('FRIENDS_ALREADY');
-    if (requestSnap.exists()) throw new Error('REQUEST_OUTGOING');
-    if (oppositeRequestSnap.exists()) throw new Error('REQUEST_INCOMING');
-    if (!publicProfileSnap.exists()) throw new Error('FRIEND_PROFILE_UNAVAILABLE');
-
-    const profile = publicProfileSnap.data();
-    transaction.set(requestRef, {
-      fromUid: currentUid,
-      toUid: targetUid,
-      fromDisplayName: String(profile.displayName || 'ScreenShelf user').slice(0, 60),
-      fromPhotoURL: normalizeProfilePhoto(profile.photoURL),
-      createdAt: serverTimestamp(),
-    });
+  state.people.loading = true;
+  state.people.error = '';
+  cloudUnsubPeopleDirectory = onSnapshot(collection(firebaseDb, 'publicProfiles'), snapshot => {
+    if (!cloudSyncUser || cloudSyncUser.uid !== currentUid) return;
+    state.people.users = snapshot.docs
+      .filter(profile => profile.id !== currentUid)
+      .map(profile => {
+        const data = profile.data();
+        return {
+          uid: profile.id,
+          displayName: normalizeText(data.displayName, 60) || 'ScreenShelf user',
+          photoURL: normalizeProfilePhoto(data.photoURL),
+        };
+      })
+      .sort((first, second) => first.displayName.localeCompare(second.displayName));
+    state.people.loading = false;
+    if (state.view === 'people') render();
+  }, error => {
+    if (!cloudSyncUser || cloudSyncUser.uid !== currentUid) return;
+    console.warn('Could not load ScreenShelf users:', error);
+    state.people.loading = false;
+    state.people.error = 'Could not load ScreenShelf users. Please try again.';
+    if (state.view === 'people') render();
   });
 }
-
-async function submitFriendCode(){
-  const input = document.getElementById('friend-code-input');
-  const code = input ? input.value : '';
-  state.friends.addLoading = true;
-  state.friends.addMessage = null;
-  renderFriendsSheet();
-  try {
-    await sendFriendRequest(code);
-    state.friends.addMessage = { type:'success', text:'Friend request sent.' };
-    await loadFriendsData();
-  } catch(error) {
-    state.friends.addMessage = { type:'error', text:friendErrorMessage(error) };
-  } finally {
-    state.friends.addLoading = false;
-    if (friendIsOpen()) renderFriendsSheet();
-  }
+function openPeopleDirectory(){
+  state.view = 'people';
+  startPeopleDirectorySync();
+  render();
+}
+function personDirectoryRow(person){
+  return `<div class="person-row">
+    <button class="person-row-main" data-open-public-library="${escapeHtml(person.uid)}" aria-label="Open ${escapeHtml(person.displayName)}'s library">
+      ${personAvatarMarkup(person.photoURL)}
+      <div class="person-row-copy"><div class="person-row-name">${escapeHtml(person.displayName)}</div><div class="person-row-note">View library</div></div>
+    </button>
+  </div>`;
+}
+function renderPeopleDirectory(){
+  const people = state.people;
+  const head = `<div class="view-head people-directory-head"><button class="back-btn" data-go="settings">← Back</button><span class="view-title people-directory-title">ScreenShelf users</span></div>`;
+  if (people.loading && !people.users.length) return head + `<div class="loading-block"><div class="spinner">🌀</div><div>Loading ScreenShelf users…</div></div>`;
+  if (people.error && !people.users.length) return head + `<div class="empty-block"><div class="empty-emoji">⚠️</div><div class="empty-title">Directory unavailable</div><div class="empty-text">${escapeHtml(people.error)}</div><button class="btn btn-ghost" data-reload-people-directory>Try again</button></div>`;
+  const list = people.users.length
+    ? people.users.map(personDirectoryRow).join('')
+    : `<div class="people-empty">No other ScreenShelf users are available yet.</div>`;
+  return head + `<div class="people-directory-note">All verified ScreenShelf users can open the anime and series libraries listed here. Your email and private account data are not shown.</div>
+    <div class="people-count">${people.users.length} user${people.users.length === 1 ? '' : 's'}</div>
+    <div class="people-list">${list}</div>${people.error ? `<div class="people-directory-note">${escapeHtml(people.error)}</div>` : ''}`;
 }
 
-async function acceptFriendRequest(requestId){
+function publicLibrarySortKey(){
+  return state.publicLibrary.activeTab === 'anime' ? state.publicLibrary.sortBy.anime : state.publicLibrary.sortBy.shows;
+}
+function sortPublicLibraryItems(items){
+  const mode = publicLibrarySortKey();
+  const sorted = items.slice();
+  if (mode === 'added') sorted.sort((x, y) => (y.addedAt || 0) - (x.addedAt || 0));
+  else if (mode === 'updated') sorted.sort((x, y) => (y.updatedAt || 0) - (x.updatedAt || 0));
+  else sorted.sort((x, y) => x.title.localeCompare(y.title));
+  return sorted;
+}
+function publicActiveLibrary(){ return state.publicLibrary.activeTab === 'anime' ? state.publicLibrary.anime : state.publicLibrary.series; }
+function publicActiveStatuses(){ return state.publicLibrary.activeTab === 'anime' ? STATUSES : SHOW_STATUSES; }
+function publicActiveStatusMap(){ return state.publicLibrary.activeTab === 'anime' ? STATUS_MAP : SHOW_STATUS_MAP; }
+
+async function loadPublicLibrary(userId){
   if (!cloudSyncUser) return;
-  try {
-    await runTransaction(firebaseDb, async transaction => {
-      const requestRef = doc(firebaseDb, 'friendRequests', requestId);
-      const requestSnap = await transaction.get(requestRef);
-      if (!requestSnap.exists()) throw new Error('REQUEST_NOT_FOUND');
-      const request = requestSnap.data();
-      const fromUid = String(request.fromUid || '');
-      const toUid = String(request.toUid || '');
-      if (toUid !== cloudSyncUser.uid) throw new Error('REQUEST_NOT_FOR_YOU');
-      if (!fromUid || requestId !== friendRequestId(fromUid, toUid)) throw new Error('REQUEST_NOT_FOUND');
-
-      const users = [fromUid, toUid].sort();
-      const friendshipRef = doc(firebaseDb, 'friendships', friendshipId(fromUid, toUid));
-      const friendshipSnap = await transaction.get(friendshipRef);
-      if (friendshipSnap.exists()) throw new Error('FRIENDS_ALREADY');
-
-      transaction.set(friendshipRef, { users, createdAt: serverTimestamp() });
-      transaction.delete(requestRef);
-    });
-    showToast('Friend request accepted.');
-  } catch(error) {
-    showToast(friendErrorMessage(error));
-  }
-  await loadFriendsData();
-}
-
-async function rejectFriendRequest(requestId){
-  try {
-    await deleteDoc(doc(firebaseDb, 'friendRequests', requestId));
-    showToast('Friend request declined.');
-  } catch(error) {
-    showToast(friendErrorMessage(error));
-  }
-  await loadFriendsData();
-}
-
-async function cancelFriendRequest(requestId){
-  try {
-    await deleteDoc(doc(firebaseDb, 'friendRequests', requestId));
-    showToast('Friend request cancelled.');
-  } catch(error) {
-    showToast(friendErrorMessage(error));
-  }
-  await loadFriendsData();
-}
-
-async function removeFriend(friendUid){
-  if (!cloudSyncUser) return;
-  const friend = state.friends.list.find(item => item.uid === friendUid);
-  if (!window.confirm(`Remove ${friend ? friend.displayName : 'this friend'}?`)) return;
-  try {
-    await deleteDoc(doc(firebaseDb, 'friendships', friendshipId(cloudSyncUser.uid, friendUid)));
-    showToast('Friend removed.');
-  } catch(error) {
-    showToast(friendErrorMessage(error));
-  }
-  await loadFriendsData();
-}
-
-async function copyFriendCode(){
-  const code = state.friends.friendCode;
-  if (!code) return;
-  try {
-    await navigator.clipboard.writeText(code);
-    showToast('Friend Code copied.');
-  } catch(error) {
-    const textarea = document.createElement('textarea');
-    textarea.value = code;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    textarea.remove();
-    showToast('Friend Code copied.');
-  }
-}
-
-async function loadFriendLibrary(friendUid){
-  if (!cloudSyncUser) return;
-  const knownFriend = state.friends.list.find(friend => friend.uid === friendUid);
-  state.friendLibrary = {
-    uid: friendUid,
-    displayName: knownFriend ? knownFriend.displayName : 'Friend',
-    photoURL: knownFriend ? knownFriend.photoURL : '',
+  const person = state.people.users.find(value => value.uid === userId);
+  if (!person) { showToast('That user is no longer in the directory.'); return; }
+  stopPeopleDirectorySync();
+  state.publicLibrary = {
+    uid: person.uid,
+    displayName: person.displayName,
+    photoURL: person.photoURL,
     anime: [],
     series: [],
     loading: true,
@@ -1717,29 +1598,70 @@ async function loadFriendLibrary(friendUid){
     expandedStatus: null,
     detailId: null,
   };
-  state.view = 'friendLibrary';
+  state.view = 'publicLibrary';
   render();
-
   try {
-    if (!navigator.onLine) throw new Error('FRIENDS_OFFLINE');
     const [animeSnap, seriesSnap] = await Promise.all([
-      getDocs(collection(firebaseDb, 'users', friendUid, 'anime')),
-      getDocs(collection(firebaseDb, 'users', friendUid, 'series')),
+      getDocs(collection(firebaseDb, 'users', person.uid, 'anime')),
+      getDocs(collection(firebaseDb, 'users', person.uid, 'series')),
     ]);
-    state.friendLibrary.anime = animeSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'anime', snapshot.data().tmdbId ?? snapshot.id)).filter(Boolean);
-    state.friendLibrary.series = seriesSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'show', snapshot.data().tmdbId ?? snapshot.id)).filter(Boolean);
+    state.publicLibrary.anime = animeSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'anime', snapshot.data().tmdbId ?? snapshot.id)).filter(Boolean);
+    state.publicLibrary.series = seriesSnap.docs.map(snapshot => fromCloudItem(snapshot.data(), 'show', snapshot.data().tmdbId ?? snapshot.id)).filter(Boolean);
   } catch(error) {
-    console.warn('Could not load friend library:', error);
-    state.friendLibrary.error = 'This library is unavailable. You may no longer be friends, or the account may no longer exist.';
+    console.warn('Could not load public library:', error);
+    state.publicLibrary.error = 'This library is unavailable right now. Please try again.';
   } finally {
-    state.friendLibrary.loading = false;
-    if (state.view === 'friendLibrary' || state.view === 'friendDetail') render();
+    state.publicLibrary.loading = false;
+    if (state.view === 'publicLibrary' || state.view === 'publicDetail') render();
   }
 }
-
-function openFriendLibrary(friendUid){
-  closeSheet();
-  loadFriendLibrary(friendUid);
+function openPublicLibrary(userId){
+  void loadPublicLibrary(userId);
+}
+function renderPublicLibrary(){
+  const library = state.publicLibrary;
+  const name = library.displayName || 'ScreenShelf user';
+  const head = `<div class="view-head people-directory-head"><button class="back-btn" data-go="people">← Back</button><span class="view-title people-directory-title">${escapeHtml(name)}’s library</span></div>`;
+  if (library.loading) return head + `<div class="loading-block"><div class="spinner">🌀</div><div>Loading ${escapeHtml(name)}’s library…</div></div>`;
+  if (library.error) return head + `<div class="empty-block"><div class="empty-emoji">⚠️</div><div class="empty-title">Library unavailable</div><div class="empty-text">${escapeHtml(library.error)}</div><button class="btn btn-ghost" data-refresh-public-library>Try again</button></div>`;
+  const tabs = `<div class="media-tabs" role="tablist">
+    <button class="media-tab ${library.activeTab==='shows'?'active':''}" data-public-media-tab="shows">𝕊𝕖𝕣𝕚𝕖𝕤</button>
+    <button class="media-tab ${library.activeTab==='anime'?'active':''}" data-public-media-tab="anime">𝔸𝕟𝕚𝕞𝕖</button>
+  </div>`;
+  const sortRow = `<div class="sort-row">Sort:
+    <select id="public-sort-select" aria-label="Sort library">${SORT_OPTIONS.map(option => `<option value="${option.key}" ${publicLibrarySortKey()===option.key?'selected':''}>${option.label}</option>`).join('')}</select>
+  </div>`;
+  const itemsByStatus = publicActiveStatuses().map(status => {
+    const items = sortPublicLibraryItems(publicActiveLibrary().filter(item => item.status === status.key));
+    const open = library.expandedStatus === status.key;
+    const rows = items.length ? items.map(item => {
+      const rating = item.rating && RATING_MAP[item.rating] ? RATINGS.find(value => value.key === item.rating) : null;
+      return `<button class="anime-row public-library-row" data-open-public-detail="${escapeHtml(item.id)}">
+        <img class="poster-thumb" src="${posterSrc(item.poster)}" alt="">
+        <span class="anime-title-wrap"><span class="anime-title">${escapeHtml(item.title)}</span></span>
+        <span class="public-library-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}" aria-label="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : ''}</span>
+      </button>`;
+    }).join('') : `<div class="status-empty">${escapeHtml(EMPTY_STATUS_MESSAGES[status.key] || 'Nothing here yet.')}</div>`;
+    return `<div class="status-section status-${status.key}"><button class="status-header" aria-expanded="${open}" data-toggle-public-status="${status.key}">
+      <span class="status-dot"></span><span>${status.label}</span><span class="status-emoji">${status.emoji}</span><span class="status-count">•${items.length}</span><span class="status-caret">›</span>
+    </button><div class="status-list ${open?'open':''}"><div class="status-list-inner">${rows}</div></div></div>`;
+  }).join('');
+  return head + `<div class="public-library-tools"><button class="btn btn-ghost btn-sm" data-refresh-public-library>↻ Refresh</button></div><div class="public-library-note">Read-only library</div>` + tabs + sortRow + itemsByStatus;
+}
+function renderPublicDetail(){
+  const library = state.publicLibrary;
+  const item = publicActiveLibrary().find(value => value.id === library.detailId);
+  if (!item) return `<div class="view-head"><button class="back-btn" data-go="public-library">← Back</button></div><div class="empty-block"><div class="empty-title">Not found</div></div>`;
+  const status = publicActiveStatusMap()[item.status] || publicActiveStatusMap().planned;
+  const rating = item.rating && RATING_MAP[item.rating] ? RATING_MAP[item.rating] : null;
+  const seasons = item.seasons || [];
+  const totalEpisodes = seasons.reduce((count, season) => count + (season.episodeCount || 0), 0);
+  const seasonRows = seasons.length ? seasons.map(season => `<div class="season-row"><div class="season-head season-head-readonly"><span class="season-check ${season.watched?'checked':''}">${season.watched?'✓':''}</span><span class="season-name">${escapeHtml(season.name)} <span style="color:var(--muted); font-weight:500;">· ${season.episodeCount} ep</span></span></div></div>`).join('') : `<div class="status-empty">No season data from TMDB.</div>`;
+  return `<div class="view-head"><button class="back-btn" data-go="public-library">← Back</button></div>
+    <div class="detail-hero"><h1 class="detail-title">${escapeHtml(item.title)}</h1><div class="detail-poster-wrap"><img class="detail-poster" src="${posterSrc(item.poster)}" alt=""></div>
+    <div class="detail-stats"><b>${seasons.length}</b>&nbsp;seasons&nbsp;&nbsp;·&nbsp;&nbsp;<b>${totalEpisodes}</b>&nbsp;episodes</div></div>
+    <div class="detail-actions"><div class="status-pill status-${item.status}"><span class="status-dot"></span>${status.label} ${status.emoji}</div><div class="public-rating-pill">Rating: ${rating ? `${rating.emoji} ${escapeHtml(rating.label)}` : '❓ Not rated'}</div></div>
+    <div class="public-readonly-note">Read-only library</div><div class="section-label">Seasons</div><div id="season-list">${seasonRows}</div>`;
 }
 
 /* =========================================================
@@ -1804,6 +1726,7 @@ function tmdbSeriesToAnimeShape(tv){
       episodeRuntime: episodeRuntimeFromTv(tv),
       tmdbVoteAverage: boundedDecimal(tv.vote_average, 0, 10, null),
       tmdbVoteCount: boundedInteger(tv.vote_count, 0, 2147483647, null),
+      tmdbRefreshedAt: Date.now(),
     },
   };
 }
@@ -1840,7 +1763,6 @@ function openSheet(html){
 }
 function closeSheet(){
   document.getElementById('overlay').classList.remove('show');
-  state.friends.sheetOpen = false;
 }
 document.getElementById('overlay').addEventListener('click', (e)=>{ if (e.target.id==='overlay') closeSheet(); });
 
@@ -1854,15 +1776,16 @@ function render(){
     search: renderSearch,
     detail: renderDetail,
     settings: renderSettings,
-    friendLibrary: renderFriendLibrary,
-    friendDetail: renderFriendDetail,
+    people: renderPeopleDirectory,
+    publicLibrary: renderPublicLibrary,
+    publicDetail: renderPublicDetail,
   }[state.view] || renderHome)();
   wireViewEvents();
   main.classList.toggle('main-flex-fill', state.view === 'home');
   const appShell = document.getElementById('app-shell');
   appShell.classList.toggle('series-mode', state.view === 'home' && state.activeTab === 'shows');
   appShell.classList.toggle('anime-mode', state.view === 'home' && state.activeTab === 'anime');
-  appShell.classList.toggle('friend-view', state.view === 'friendLibrary' || state.view === 'friendDetail');
+  appShell.classList.toggle('public-library-view', state.view === 'publicLibrary' || state.view === 'publicDetail');
   updateBellBadge();
 }
 
@@ -1932,14 +1855,16 @@ function renderHome(){
     const rows=items.length ? (state.libraryView === 'grid'
       ? `<div class="library-grid">${items.map(a=>{
         const rating = a.rating && RATING_MAP[a.rating] ? RATING_MAP[a.rating] : null;
-        return `<button class="library-grid-tile" data-open-detail="${escapeHtml(a.id)}">
-          <img class="library-grid-poster" src="${posterSrc(a.poster)}" alt="">${rating ? `<span class="library-grid-rating" aria-label="${escapeHtml(rating.label)}" title="${escapeHtml(rating.label)}">${rating.emoji}</span>` : ''}<span class="library-grid-title">${escapeHtml(a.title)}</span>
+        const titleUpdate = hasUnseenTitleUpdate(a);
+        return `<button class="library-grid-tile ${titleUpdate ? 'has-title-update' : ''}" data-open-detail="${escapeHtml(a.id)}">
+          <img class="library-grid-poster" src="${posterSrc(a.poster)}" alt="">${titleUpdate ? `<span class="title-update-dot" role="img" aria-label="New TMDB content"></span>` : ''}${rating ? `<span class="library-grid-rating" aria-label="${escapeHtml(rating.label)}" title="${escapeHtml(rating.label)}">${rating.emoji}</span>` : ''}<span class="library-grid-title">${escapeHtml(a.title)}</span>
         </button>`;
       }).join('')}</div>`
       : items.map(a=>{
         const rating = a.rating && RATING_MAP[a.rating] ? RATING_MAP[a.rating] : null;
-        return `<button class="anime-row own-library-row" data-open-detail="${escapeHtml(a.id)}">
-          <img class="poster-thumb" src="${posterSrc(a.poster)}" alt=""><span class="anime-title-wrap"><span class="anime-title">${escapeHtml(a.title)}</span></span>${state.settings.showLibraryRatings ? `<span class="library-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}" aria-label="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : ''}</span>` : ''}</button>`;
+        const titleUpdate = hasUnseenTitleUpdate(a);
+        return `<button class="anime-row own-library-row ${titleUpdate ? 'has-title-update' : ''}" data-open-detail="${escapeHtml(a.id)}">
+          <img class="poster-thumb" src="${posterSrc(a.poster)}" alt=""><span class="anime-title-wrap"><span class="anime-title">${escapeHtml(a.title)}</span></span>${titleUpdate ? `<span class="title-update-dot" role="img" aria-label="New TMDB content"></span>` : ''}${state.settings.showLibraryRatings ? `<span class="library-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}" aria-label="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : ''}</span>` : ''}</button>`;
       }).join(''))
       : `<div class="status-empty">${escapeHtml(EMPTY_STATUS_MESSAGES[st.key] || 'Nothing here yet.')}</div>`;
     return `<div class="status-section status-${st.key}"><button class="status-header" aria-expanded="${open}" data-toggle-status="${st.key}">
@@ -2029,6 +1954,36 @@ function tmdbScoreMarkup(meta){
   const voteText = formatVoteCount(votes) + ' votes';
   return `<div class="tmdb-score" aria-label="TMDB community score ${scoreText}, ${voteText}" title="TMDB community score"><span class="tmdb-score-mark" aria-hidden="true">TMDB</span><span class="tmdb-score-value">${scoreText}</span><span aria-hidden="true">•</span><span>${voteText}</span></div>`;
 }
+function tmdbTitleLinkMarkup(item){
+  const tmdbId = normalizeTmdbId(item && item.tmdbId);
+  if (!tmdbId) return '';
+  return `<a class="tmdb-title-link" href="https://www.themoviedb.org/tv/${tmdbId}" target="_blank" rel="noopener noreferrer" aria-label="Open ${escapeHtml(item.title)} on TMDB">Open on TMDB ↗</a>`;
+}
+function tmdbRefreshMarkup(meta){
+  const refreshedAt = boundedInteger(meta && meta.tmdbRefreshedAt, 0, MAX_TMDB_REFRESH_MILLIS, null);
+  if (refreshedAt == null) return '';
+  const date = new Date(refreshedAt);
+  if (Number.isNaN(date.getTime())) return '';
+  return `<div class="tmdb-refresh-time">Last TMDB refresh: ${escapeHtml(date.toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' }))}</div>`;
+}
+function renderCompanionMovies(item){
+  const checklist = state.companionMovies;
+  const ready = companionMoviesMatch(item);
+  const movies = ready ? checklist.items : [];
+  let body = '';
+  if (!ready || checklist.loading) body = `<div class="inline-loading"><div class="spinner">🌀</div><div>Loading private checklist…</div></div>`;
+  else if (checklist.error) body = `<div class="companion-empty">${escapeHtml(checklist.error)}</div>`;
+  else if (!movies.length) body = `<div class="companion-empty">Add any companion movies you want to finish with this title.</div>`;
+  else body = movies.map((movie, index) => `<div class="companion-row">
+    <button class="companion-toggle ${movie.watched ? 'is-watched' : ''}" data-toggle-companion-movie="${index}" aria-pressed="${movie.watched}">
+      <span class="season-check ${movie.watched ? 'checked' : ''}">${movie.watched ? '✓' : ''}</span><span class="companion-title">${escapeHtml(movie.title)}</span>
+    </button>
+    <button class="companion-remove" data-remove-companion-movie="${index}" aria-label="Remove ${escapeHtml(movie.title)}" title="Remove">×</button>
+  </div>`).join('');
+  return `<div class="section-label">Companion movies <span style="font-weight:500; text-transform:none;">· private</span></div>
+    <div class="companion-list">${body}</div>
+    <div class="companion-add"><input class="field-input" id="companion-movie-input" type="text" maxlength="${MAX_COMPANION_MOVIE_TITLE_LENGTH}" placeholder="Add a movie title" aria-label="Companion movie title"><button class="btn btn-ghost btn-sm" data-add-companion-movie="1">Add</button></div>`;
+}
 function renderDetail(){
   if(state.detailLoading)return `<div class="view-head"><button class="back-btn" data-go="${state.previewMode?'search':'home'}">← Back</button></div><div class="loading-block"><div class="spinner">🌀</div><div>Loading from TMDB…</div></div>`;
   const lib=activeLibrary(),map=activeStatusMap(),a=state.previewMode?state.previewTmdb:lib.find(x=>x.id===state.detailId);
@@ -2043,11 +1998,14 @@ function renderDetail(){
     actions=`<div class="detail-actions"><div class="detail-meta-row"><div class="status-pill status-${a.status}"><span class="status-dot"></span>${st.label} ${st.emoji}</div><button class="rating-pill" data-open-rating="1">Rating: <span class="rating-emoji">${rating ? `${rating.emoji} ${escapeHtml(rating.label)}` : RATING_UNSET_EMOJI}</span></button></div><button class="btn btn-ghost btn-block" data-change-status="1">Change status</button></div>`;}
   const tmdbScore = tmdbScoreMarkup(a.tmdbMeta);
   const tmdbStatus=a.tmdbMeta&&a.tmdbMeta.tmdbStatus?`<div class="detail-tmdb-status">TMDB status: ${escapeHtml(a.tmdbMeta.tmdbStatus)}</div>`:'';
+  const tmdbLink = tmdbTitleLinkMarkup(a);
   const del=!state.previewMode?`<div class="delete-fab"><button class="btn btn-danger btn-sm" data-delete-anime="1">🗑️ Remove from library</button></div>`:'';
+  const companionMovies = !state.previewMode ? renderCompanionMovies(a) : '';
+  const tmdbRefresh = !state.previewMode ? tmdbRefreshMarkup(a.tmdbMeta) : '';
   return `<div class="view-head"><button class="back-btn" data-go="${state.previewMode?'search':'home'}">← Back</button></div>
     <div class="detail-hero"><h1 class="detail-title">${escapeHtml(a.title)}</h1><div class="detail-poster-wrap"><img class="detail-poster" src="${posterSrc(a.poster)}" alt=""></div>
-    <div class="detail-stats"><b>${seasons.length}</b>&nbsp;seasons&nbsp;&nbsp;·&nbsp;&nbsp;<b>${totalEpisodes}</b>&nbsp;episodes</div>${tmdbScore}${tmdbStatus}</div>
-    ${actions}<div class="section-label">Seasons</div><div id="season-list">${seasonRows}</div>${del}`;
+    <div class="detail-stats"><b>${seasons.length}</b>&nbsp;seasons&nbsp;&nbsp;·&nbsp;&nbsp;<b>${totalEpisodes}</b>&nbsp;episodes</div>${tmdbScore}${tmdbStatus}${tmdbLink}</div>
+    ${actions}<div class="section-label">Seasons</div><div id="season-list">${seasonRows}</div>${del}${companionMovies}${tmdbRefresh}`;
 }
 function renderSeasonRow(s, idx){
   const checked = !!s.watched;
@@ -2103,9 +2061,9 @@ function renderSettings(){
     <div class="divider"></div>
 
     <div class="field">
-      <label class="field-label">Friends</label>
-      <button class="btn btn-ghost btn-block friends-entry" id="open-friends-btn">
-        <span class="friends-entry-copy"><span class="friends-entry-title">Friends</span></span>
+      <label class="field-label">ScreenShelf users</label>
+      <button class="btn btn-ghost btn-block people-entry" id="open-people-directory-btn">
+        <span class="people-entry-copy"><span class="people-entry-title">Browse users and libraries</span></span>
         <span aria-hidden="true">›</span>
       </button>
     </div>
@@ -2164,176 +2122,6 @@ function renderSettings(){
       <button class="btn btn-danger btn-block" id="sign-out-btn">Sign out</button>
     </div>
   `;
-}
-
-/* =========================================================
-   Friends UI
-========================================================= */
-function friendFeedbackMarkup(){
-  const feedback = state.friends.addMessage;
-  return feedback ? `<div class="friend-feedback ${feedback.type}">${escapeHtml(feedback.text)}</div>` : '<div class="friend-feedback"></div>';
-}
-
-function friendRequestRow(request){
-  return `<div class="friend-row">
-    ${friendAvatarMarkup(request.photoURL, request.displayName)}
-    <div class="friend-row-copy"><div class="friend-row-name">${escapeHtml(request.displayName)}</div><div class="friend-row-note">Wants to be friends</div></div>
-    <div class="friend-row-actions">
-      <button class="friend-mini-btn accent" data-accept-friend-request="${escapeHtml(request.id)}">Accept</button>
-      <button class="friend-mini-btn danger" data-reject-friend-request="${escapeHtml(request.id)}">Reject</button>
-    </div>
-  </div>`;
-}
-
-function outgoingRequestRow(request){
-  return `<div class="friend-row">
-    <span class="friend-avatar friend-avatar-fallback" aria-hidden="true">⏳</span>
-    <div class="friend-row-copy"><div class="friend-row-name">Friend request pending</div><div class="friend-row-note">Waiting for their response</div></div>
-    <div class="friend-row-actions"><button class="friend-mini-btn danger" data-cancel-friend-request="${escapeHtml(request.id)}">Cancel</button></div>
-  </div>`;
-}
-
-function friendListRow(friend){
-  return `<div class="friend-row">
-    <button class="friend-row-main" data-open-friend-library="${escapeHtml(friend.uid)}" aria-label="Open ${escapeHtml(friend.displayName)}'s library">
-      ${friendAvatarMarkup(friend.photoURL, friend.displayName)}
-      <div class="friend-row-copy"><div class="friend-row-name">${escapeHtml(friend.displayName)}</div><div class="friend-row-note">View library</div></div>
-    </button>
-    <div class="friend-row-actions"><button class="friend-mini-btn danger" data-remove-friend="${escapeHtml(friend.uid)}">Remove</button></div>
-  </div>`;
-}
-
-function friendsListSheetMarkup(){
-  const friends = state.friends;
-  const incoming = friends.incoming.length ? friends.incoming.map(friendRequestRow).join('') : '';
-  const outgoing = friends.outgoing.length ? friends.outgoing.map(outgoingRequestRow).join('') : '';
-  const pending = incoming || outgoing
-    ? incoming + outgoing
-    : `<div class="friends-empty">No pending friend requests.</div>`;
-  const list = friends.list.length
-    ? friends.list.map(friendListRow).join('')
-    : `<div class="friends-empty">No friends yet. Share your Friend Code to get started.</div>`;
-  const code = friends.friendCode || '••••••••';
-
-  return `
-    <div class="sheet-grip"></div>
-    <div class="friends-sheet-head"><div class="sheet-title">Friends</div><button class="friends-add-btn" data-open-add-friend>+ Add Friend</button></div>
-    <div class="friend-code-box"><div><div class="friend-code-label">YOUR FRIEND CODE</div><div class="friend-code-value">${escapeHtml(code)}</div></div><button class="friend-code-copy" data-copy-friend-code ${friends.friendCode ? '' : 'disabled'}>Copy</button></div>
-    ${friends.error ? `<div class="friends-empty">${escapeHtml(friends.error)}</div>` : ''}
-    ${friends.loading ? `<div class="inline-loading" style="padding:8px 10px 14px;"><span class="spinner">🌀</span> Refreshing Friends…</div>` : ''}
-    <span class="friends-section-label">Pending requests</span>
-    <div class="friends-list">${pending}</div>
-    <span class="friends-section-label">Friends</span>
-    <div class="friends-list">${list}</div>`;
-}
-
-function addFriendSheetMarkup(){
-  const busy = state.friends.addLoading;
-  return `
-    <div class="sheet-grip"></div>
-    <div class="friends-sheet-head"><div class="sheet-title">Add Friend</div><button class="friends-add-btn" data-back-to-friends>← Friends</button></div>
-    <div class="friend-add-form">
-      <div class="friend-add-help">Enter a Friend Code to send a private library-sharing request.</div>
-      <label class="field-label" for="friend-code-input">Friend Code</label>
-      <input class="field-input friend-code-input" id="friend-code-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" maxlength="8" placeholder="ABCD2345" aria-describedby="friend-code-feedback" ${busy ? 'disabled' : ''}>
-      <button class="btn btn-accent btn-block" data-submit-friend-code style="margin-top:12px;" ${busy ? 'disabled' : ''}>${busy ? 'Adding…' : 'Add Friend'}</button>
-      <div id="friend-code-feedback">${friendFeedbackMarkup()}</div>
-    </div>`;
-}
-
-function renderFriendsSheet(){
-  if (!friendIsOpen()) return;
-  openSheet(state.friends.mode === 'add' ? addFriendSheetMarkup() : friendsListSheetMarkup());
-  const input = document.getElementById('friend-code-input');
-  if (input){
-    input.addEventListener('input', () => { input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8); });
-    input.addEventListener('keydown', event => { if (event.key === 'Enter') submitFriendCode(); });
-    if (!state.friends.addLoading) setTimeout(() => input.focus(), 0);
-  }
-}
-
-async function openFriendsSheet(){
-  state.friends.sheetOpen = true;
-  state.friends.mode = 'list';
-  state.friends.addMessage = null;
-  renderFriendsSheet();
-  await loadFriendsData();
-}
-
-function openAddFriendSheet(){
-  state.friends.mode = 'add';
-  state.friends.addMessage = null;
-  renderFriendsSheet();
-}
-
-function backToFriendsSheet(){
-  state.friends.mode = 'list';
-  state.friends.addMessage = null;
-  renderFriendsSheet();
-}
-
-function friendLibrarySortKey(){
-  return state.friendLibrary.activeTab === 'anime' ? state.friendLibrary.sortBy.anime : state.friendLibrary.sortBy.shows;
-}
-function sortFriendItems(items){
-  const mode = friendLibrarySortKey();
-  const sorted = items.slice();
-  if (mode === 'added') sorted.sort((x, y) => (y.addedAt || 0) - (x.addedAt || 0));
-  else if (mode === 'updated') sorted.sort((x, y) => (y.updatedAt || 0) - (x.updatedAt || 0));
-  else sorted.sort((x, y) => x.title.localeCompare(y.title));
-  return sorted;
-}
-function friendActiveLibrary(){ return state.friendLibrary.activeTab === 'anime' ? state.friendLibrary.anime : state.friendLibrary.series; }
-function friendActiveStatuses(){ return state.friendLibrary.activeTab === 'anime' ? STATUSES : SHOW_STATUSES; }
-function friendActiveStatusMap(){ return state.friendLibrary.activeTab === 'anime' ? STATUS_MAP : SHOW_STATUS_MAP; }
-
-function renderFriendLibrary(){
-  const friend = state.friendLibrary;
-  const name = friend.displayName || 'Friend';
-  const head = `<div class="view-head friend-library-head"><button class="back-btn" data-go="settings">← Back</button><span class="view-title friend-library-title">${escapeHtml(name)}’s library</span></div>`;
-  if (friend.loading) return head + `<div class="loading-block"><div class="spinner">🌀</div><div>Loading ${escapeHtml(name)}’s library…</div></div>`;
-  if (friend.error) return head + `<div class="empty-block"><div class="empty-emoji">🔒</div><div class="empty-title">Library unavailable</div><div class="empty-text">${escapeHtml(friend.error)}</div><button class="btn btn-ghost" data-refresh-friend-library>Try again</button></div>`;
-
-  const tabs = `<div class="media-tabs" role="tablist">
-    <button class="media-tab ${friend.activeTab==='shows'?'active':''}" data-friend-media-tab="shows">𝕊𝕖𝕣𝕚𝕖𝕤</button>
-    <button class="media-tab ${friend.activeTab==='anime'?'active':''}" data-friend-media-tab="anime">𝔸𝕟𝕚𝕞𝕖</button>
-  </div>`;
-  const sortRow = `<div class="sort-row">Sort:
-    <select id="friend-sort-select" aria-label="Sort friend library">${SORT_OPTIONS.map(option => `<option value="${option.key}" ${friendLibrarySortKey()===option.key?'selected':''}>${option.label}</option>`).join('')}</select>
-  </div>`;
-  const library = friendActiveLibrary();
-  const sections = friendActiveStatuses().map(status => {
-    const items = sortFriendItems(library.filter(item => item.status === status.key));
-    const open = friend.expandedStatus === status.key;
-    const rows = items.length ? items.map(item => {
-      const rating = item.rating && RATING_MAP[item.rating] ? RATINGS.find(value => value.key === item.rating) : null;
-      return `<button class="anime-row friend-library-row" data-open-friend-detail="${escapeHtml(item.id)}">
-        <img class="poster-thumb" src="${posterSrc(item.poster)}" alt="">
-        <span class="anime-title-wrap"><span class="anime-title">${escapeHtml(item.title)}</span></span>
-        <span class="friend-rating" title="${rating ? escapeHtml(rating.label) : 'Not rated'}" aria-label="${rating ? escapeHtml(rating.label) : 'Not rated'}">${rating ? rating.emoji : ''}</span>
-      </button>`;
-    }).join('') : `<div class="status-empty">${escapeHtml(EMPTY_STATUS_MESSAGES[status.key] || 'Nothing here yet.')}</div>`;
-    return `<div class="status-section status-${status.key}"><button class="status-header" aria-expanded="${open}" data-toggle-friend-status="${status.key}">
-      <span class="status-dot"></span><span>${status.label}</span><span class="status-emoji">${status.emoji}</span><span class="status-count">•${items.length}</span><span class="status-caret">›</span>
-    </button><div class="status-list ${open?'open':''}"><div class="status-list-inner">${rows}</div></div></div>`;
-  }).join('');
-  return head + `<div class="friend-library-tools"><button class="btn btn-ghost btn-sm" data-refresh-friend-library>↻ Refresh</button></div><div class="friend-library-note">Read-only library</div>` + tabs + sortRow + sections;
-}
-
-function renderFriendDetail(){
-  const friend = state.friendLibrary;
-  const item = friendActiveLibrary().find(value => value.id === friend.detailId);
-  if (!item) return `<div class="view-head"><button class="back-btn" data-go="friend-library">← Back</button></div><div class="empty-block"><div class="empty-title">Not found</div></div>`;
-  const status = friendActiveStatusMap()[item.status] || friendActiveStatusMap().planned;
-  const rating = item.rating && RATING_MAP[item.rating] ? RATING_MAP[item.rating] : null;
-  const seasons = item.seasons || [];
-  const totalEpisodes = seasons.reduce((count, season) => count + (season.episodeCount || 0), 0);
-  const seasonRows = seasons.length ? seasons.map(season => `<div class="season-row"><div class="season-head season-head-readonly"><span class="season-check ${season.watched?'checked':''}">${season.watched?'✓':''}</span><span class="season-name">${escapeHtml(season.name)} <span style="color:var(--muted); font-weight:500;">· ${season.episodeCount} ep</span></span></div></div>`).join('') : `<div class="status-empty">No season data from TMDB.</div>`;
-  return `<div class="view-head"><button class="back-btn" data-go="friend-library">← Back</button></div>
-    <div class="detail-hero"><h1 class="detail-title">${escapeHtml(item.title)}</h1><div class="detail-poster-wrap"><img class="detail-poster" src="${posterSrc(item.poster)}" alt=""></div>
-    <div class="detail-stats"><b>${seasons.length}</b>&nbsp;seasons&nbsp;&nbsp;·&nbsp;&nbsp;<b>${totalEpisodes}</b>&nbsp;episodes</div></div>
-    <div class="detail-actions"><div class="status-pill status-${item.status}"><span class="status-dot"></span>${status.label} ${status.emoji}</div><div class="friend-rating-pill">Rating: ${rating ? `${rating.emoji} ${escapeHtml(rating.label)}` : '❓ Not rated'}</div></div>
-    <div class="friend-readonly-note">Read-only library</div><div class="section-label">Seasons</div><div id="season-list">${seasonRows}</div>`;
 }
 
 /* =========================================================
@@ -2443,8 +2231,8 @@ function openDeleteSheet(){
 /* =========================================================
    Actions
 ========================================================= */
-async function goHome(){ state.view='home'; state.previewMode=false; render(); }
-function goSettings(){ state.view='settings'; render(); }
+async function goHome(){ stopCompanionMoviesSync(); stopPeopleDirectorySync(); state.view='home'; state.previewMode=false; render(); }
+function goSettings(){ stopCompanionMoviesSync(); stopPeopleDirectorySync(); state.view='settings'; render(); }
 function resetSearchState(){
   clearTimeout(searchDebounce);
   searchRequestVersion += 1;
@@ -2491,6 +2279,7 @@ function onSearchInput(v){
 }
 
 async function openPreview(tmdbId){
+  stopCompanionMoviesSync();
   const safeTmdbId = normalizeTmdbId(tmdbId);
   if (!safeTmdbId){ showToast('That search result is unavailable.'); return; }
   state.view='detail';state.previewMode=true;state.detailLoading=true;render();
@@ -2507,26 +2296,33 @@ async function hydrateDetailTmdbScore(localId, mediaType){
   if (!hasApiKey()) return;
   const library = mediaType === 'show' ? state.showLibrary : state.library;
   const initial = library.find(item => item.id === localId);
-  if (!initial || (initial.tmdbMeta && initial.tmdbMeta.tmdbVoteAverage != null && initial.tmdbMeta.tmdbVoteCount != null)) return;
+  const initialMeta = initial && initial.tmdbMeta;
+  if (!initial || (initialMeta && initialMeta.tmdbVoteAverage != null && initialMeta.tmdbVoteCount != null && initialMeta.tmdbRefreshedAt != null)) return;
   try {
     const tv = await getTvDetails(initial.tmdbId);
     const score = boundedDecimal(tv.vote_average, 0, 10, null);
     const votes = boundedInteger(tv.vote_count, 0, 2147483647, null);
     const current = library.find(item => item.id === localId);
     if (!current || current.tmdbId !== initial.tmdbId) return;
-    if (current.tmdbMeta.tmdbVoteAverage === score && current.tmdbMeta.tmdbVoteCount === votes) return;
-    current.tmdbMeta = { ...current.tmdbMeta, tmdbVoteAverage:score, tmdbVoteCount:votes };
+    current.tmdbMeta = { ...current.tmdbMeta, tmdbVoteAverage:score, tmdbVoteCount:votes, tmdbRefreshedAt:Date.now() };
     await saveActiveItemForType(current, mediaType);
     if (state.view === 'detail' && !state.previewMode && state.detailId === localId) render();
   } catch(error) {
-    // Missing score data must never prevent an existing library title opening.
-    console.warn('Could not load TMDB score for', initial.title, error);
+    // Missing metadata must never prevent an existing library title opening.
+    console.warn('Could not load TMDB metadata for', initial.title, error);
   }
 }
 async function openDetail(localId){
-  state.view='detail';state.previewMode=false;state.detailId=localId;render();
   const item = activeLibrary().find(value => value.id === localId);
-  if (item) void hydrateDetailTmdbScore(localId, item.mediaType);
+  state.view='detail';state.previewMode=false;state.detailId=localId;
+  if (item){
+    loadCompanionMovies(item);
+    markTitleUpdatesSeen(item);
+    void hydrateDetailTmdbScore(localId, item.mediaType);
+  } else {
+    stopCompanionMoviesSync();
+  }
+  render();
 }
 async function addPreviewToLibrary(){
   const src=state.previewTmdb;if(!src)return;const lib=activeLibrary();
@@ -2541,32 +2337,127 @@ async function confirmAddWithStatus(statusKey){
     rating:null, seasons:src.seasons, tmdbMeta:src.tmdbMeta, addedAt:Date.now(), updatedAt:Date.now(),
   }, state.activeTab==='anime'?'anime':'show');
   if (!item){ showToast('Could not add that title.'); return; }
-  activeLibrary().push(item);await saveActiveItem(item);closeSheet();showToast('Added to '+map[statusKey].label+'.');
-  state.view='detail';state.previewMode=false;state.detailId=item.id;render();
+  activeLibrary().push(item);
+  try {
+    await saveActiveItem(item);
+  } catch(error) {
+    console.error('Could not add library item:', error);
+    const library = item.mediaType === 'show' ? state.showLibrary : state.library;
+    const index = library.findIndex(value => value.id === item.id);
+    if (index >= 0) library.splice(index, 1);
+    showToast('Could not save title.');
+    return;
+  }
+  closeSheet();
+  showToast('Added to '+map[statusKey].label+'.');
+  openDetail(item.id);
 }
 async function setAnimeStatus(statusKey){
   const a=activeLibrary().find(x=>x.id===state.detailId),map=activeStatusMap();if(!a||!map[statusKey])return;
-  a.status=statusKey;await saveActiveItem(a);closeSheet();render();
+  const previous = a.status;
+  a.status=statusKey;
+  try {
+    await saveActiveItem(a);
+    closeSheet();
+    render();
+    showToast('Status saved.');
+  } catch(error) {
+    console.error('Could not save status:', error);
+    a.status = previous;
+    render();
+    showToast('Could not sync status.');
+  }
 }
 async function setAnimeRating(ratingKey){
   const a = activeLibrary().find(x => x.id === state.detailId);
   if (!a || (ratingKey !== 'unset' && !RATING_MAP[ratingKey])) return;
+  const previous = a.rating;
   a.rating = ratingKey === 'unset' ? null : ratingKey;
-  await saveActiveItem(a);
-  closeSheet();
-  render();
+  try {
+    await saveActiveItem(a);
+    closeSheet();
+    render();
+    showToast('Rating saved.');
+  } catch(error) {
+    console.error('Could not save rating:', error);
+    a.rating = previous;
+    render();
+    showToast('Could not sync rating.');
+  }
 }
 async function deleteCurrentAnime(){
   const a = activeLibrary().find(x => x.id === state.detailId);
   if (!a) return;
-  await removeAnime(a.id);
+  try {
+    await removeAnime(a.id);
+  } catch(error) {
+    console.error('Could not remove library item:', error);
+    showToast('Could not remove title.');
+    return;
+  }
   closeSheet();
   showToast('Removed from library.');
   goHome();
 }
 async function toggleSeasonWatched(idx){
   const a=activeLibrary().find(x=>x.id===state.detailId);if(!a||state.previewMode)return;const s=a.seasons[idx];if(!s)return;
-  s.watched=!s.watched;await saveActiveItem(a);render();
+  const previous = s.watched;
+  s.watched=!s.watched;
+  try {
+    await saveActiveItem(a);
+    render();
+    showToast('Season saved.');
+  } catch(error) {
+    console.error('Could not save season:', error);
+    s.watched = previous;
+    render();
+    showToast('Could not sync season.');
+  }
+}
+function currentCompanionMovieItem(){
+  const item = !state.previewMode && state.view === 'detail'
+    ? activeLibrary().find(value => value.id === state.detailId)
+    : null;
+  return item && companionMoviesMatch(item) ? item : null;
+}
+async function updateCompanionMovies(item, nextMovies){
+  const previous = state.companionMovies.items;
+  const clean = normalizeCompanionMovies(nextMovies);
+  state.companionMovies.items = clean;
+  render();
+  try {
+    await cloudSaveCompanionMovies(item, clean);
+    showToast('Checklist saved.');
+  } catch(error) {
+    console.error('Could not save companion movie checklist:', error);
+    if (companionMoviesMatch(item)) state.companionMovies.items = previous;
+    render();
+    showToast('Could not sync checklist.');
+  }
+}
+function addCompanionMovie(){
+  const item = currentCompanionMovieItem();
+  const input = document.getElementById('companion-movie-input');
+  const title = normalizeText(input && input.value, MAX_COMPANION_MOVIE_TITLE_LENGTH);
+  if (!item || !title) return;
+  if (state.companionMovies.items.length >= MAX_COMPANION_MOVIES){
+    showToast('Checklist limit reached.');
+    return;
+  }
+  updateCompanionMovies(item, [...state.companionMovies.items, { id:uid(), title, watched:false }]);
+}
+function toggleCompanionMovie(index){
+  const item = currentCompanionMovieItem();
+  const movie = state.companionMovies.items[index];
+  if (!item || !movie) return;
+  const next = state.companionMovies.items.map((value, position) => position === index
+    ? { ...value, watched:!value.watched } : value);
+  updateCompanionMovies(item, next);
+}
+function removeCompanionMovie(index){
+  const item = currentCompanionMovieItem();
+  if (!item || !state.companionMovies.items[index]) return;
+  updateCompanionMovies(item, state.companionMovies.items.filter((_, position) => position !== index));
 }
 function setLibraryView(mode){
   if (mode !== 'list' && mode !== 'grid') return;
@@ -2579,6 +2470,7 @@ async function toggleLibraryRatings(){
   render();
   try {
     await cloudSaveProfile({ showLibraryRatings: state.settings.showLibraryRatings });
+    showToast('Library preference saved.');
   } catch(error) {
     console.error('Could not save rating visibility preference:', error);
     state.settings.showLibraryRatings = previous;
@@ -2648,6 +2540,7 @@ async function saveNameEdit(){
   try {
     await cloudSaveProfile({ displayName: val });
     await cloudSavePublicProfile();
+    showToast('Name saved.');
   } catch(e){
     console.error('Could not save display name:', e);
     showToast('Could not save name.');
@@ -2837,10 +2730,11 @@ async function refreshComebacks(){
         const currentItem = currentLibrary.find(x=>x.id===a.id);
         if(!currentItem || deletingLibraryIds.has(a.id)) continue;
 
-        const prev=currentItem.tmdbMeta||{numberOfSeasons:0,numberOfEpisodes:0,tmdbStatus:'',tmdbVoteAverage:null,tmdbVoteCount:null};
+        const prev=currentItem.tmdbMeta||{numberOfSeasons:0,numberOfEpisodes:0,tmdbStatus:'',tmdbVoteAverage:null,tmdbVoteCount:null,tmdbRefreshedAt:null};
         const ns=tv.number_of_seasons||0,ne=tv.number_of_episodes||0,st=tv.status||'';
         const voteAverage = boundedDecimal(tv.vote_average, 0, 10, null);
         const voteCount = boundedInteger(tv.vote_count, 0, 2147483647, null);
+        const refreshedAt = Date.now();
         const newContent=ns>prev.numberOfSeasons||ne>prev.numberOfEpisodes;
         const returned=prev.tmdbStatus&&/ended|canceled|cancelled/i.test(prev.tmdbStatus)&&st&&/returning/i.test(st);
 
@@ -2849,7 +2743,7 @@ async function refreshComebacks(){
             (ns - prev.numberOfSeasons) > 0
               ? `New season (${ns} total)`
               : `${ne - prev.numberOfEpisodes} new episode${(ne - prev.numberOfEpisodes) === 1 ? '' : 's'}`
-          ),createdAt:Date.now(),read:false};
+          ),createdAt:Date.now(),read:false,titleSeen:false};
           state.notifications.unshift(note);
           await saveNotification(note);
 
@@ -2863,7 +2757,7 @@ async function refreshComebacks(){
         }
 
         const metaChanged = ns!==prev.numberOfSeasons || ne!==prev.numberOfEpisodes || st!==prev.tmdbStatus
-          || voteAverage !== prev.tmdbVoteAverage || voteCount !== prev.tmdbVoteCount;
+          || voteAverage !== prev.tmdbVoteAverage || voteCount !== prev.tmdbVoteCount || refreshedAt !== prev.tmdbRefreshedAt;
         if(metaChanged){
           // No await occurs between this final guard and the Firestore write.
           // If deletion starts later, its deleteDoc is queued after this write.
@@ -2871,7 +2765,7 @@ async function refreshComebacks(){
           const stillExists=liveLibrary.some(x=>x.id===currentItem.id);
           if(!stillExists || deletingLibraryIds.has(currentItem.id)) continue;
 
-          currentItem.tmdbMeta={numberOfSeasons:ns,numberOfEpisodes:ne,tmdbStatus:st,episodeRuntime:episodeRuntimeFromTv(tv),tmdbVoteAverage:voteAverage,tmdbVoteCount:voteCount};
+          currentItem.tmdbMeta={numberOfSeasons:ns,numberOfEpisodes:ne,tmdbStatus:st,episodeRuntime:episodeRuntimeFromTv(tv),tmdbVoteAverage:voteAverage,tmdbVoteCount:voteCount,tmdbRefreshedAt:refreshedAt};
           await saveActiveItemForType(currentItem,currentItem.mediaType==='show'?'show':'anime');
         }
       }catch(e){ console.warn('refreshComebacks failed for', a.title, e); }
@@ -2929,30 +2823,37 @@ function wireViewEvents(){
     setLibraryView(el.getAttribute('data-set-library-view'));
   }));
 
-  main.querySelectorAll('[data-friend-media-tab]').forEach(el => el.addEventListener('click', () => {
-    state.friendLibrary.activeTab = el.getAttribute('data-friend-media-tab');
-    state.friendLibrary.expandedStatus = null;
-    state.friendLibrary.detailId = null;
+  main.querySelectorAll('[data-public-media-tab]').forEach(el => el.addEventListener('click', () => {
+    state.publicLibrary.activeTab = el.getAttribute('data-public-media-tab');
+    state.publicLibrary.expandedStatus = null;
+    state.publicLibrary.detailId = null;
     render();
   }));
-  const friendSortSelect = document.getElementById('friend-sort-select');
-  if (friendSortSelect) friendSortSelect.addEventListener('change', () => {
-    const key = state.friendLibrary.activeTab === 'anime' ? 'anime' : 'shows';
-    state.friendLibrary.sortBy[key] = friendSortSelect.value;
+  const publicSortSelect = document.getElementById('public-sort-select');
+  if (publicSortSelect) publicSortSelect.addEventListener('change', () => {
+    const key = state.publicLibrary.activeTab === 'anime' ? 'anime' : 'shows';
+    state.publicLibrary.sortBy[key] = publicSortSelect.value;
     render();
   });
-  main.querySelectorAll('[data-toggle-friend-status]').forEach(el => el.addEventListener('click', () => {
-    const key = el.getAttribute('data-toggle-friend-status');
-    state.friendLibrary.expandedStatus = state.friendLibrary.expandedStatus === key ? null : key;
+  main.querySelectorAll('[data-toggle-public-status]').forEach(el => el.addEventListener('click', () => {
+    const key = el.getAttribute('data-toggle-public-status');
+    state.publicLibrary.expandedStatus = state.publicLibrary.expandedStatus === key ? null : key;
     render();
   }));
-  main.querySelectorAll('[data-open-friend-detail]').forEach(el => el.addEventListener('click', () => {
-    state.friendLibrary.detailId = el.getAttribute('data-open-friend-detail');
-    state.view = 'friendDetail';
+  main.querySelectorAll('[data-open-public-detail]').forEach(el => el.addEventListener('click', () => {
+    state.publicLibrary.detailId = el.getAttribute('data-open-public-detail');
+    state.view = 'publicDetail';
     render();
   }));
-  main.querySelectorAll('[data-refresh-friend-library]').forEach(el => el.addEventListener('click', () => {
-    if (state.friendLibrary.uid) loadFriendLibrary(state.friendLibrary.uid);
+  main.querySelectorAll('[data-refresh-public-library]').forEach(el => el.addEventListener('click', () => {
+    if (state.publicLibrary.uid) loadPublicLibrary(state.publicLibrary.uid);
+  }));
+  main.querySelectorAll('[data-reload-people-directory]').forEach(el => el.addEventListener('click', () => {
+    startPeopleDirectorySync();
+    render();
+  }));
+  main.querySelectorAll('[data-open-public-library]').forEach(el => el.addEventListener('click', () => {
+    openPublicLibrary(el.getAttribute('data-open-public-library'));
   }));
 
   main.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', () => {
@@ -2960,7 +2861,8 @@ function wireViewEvents(){
     if (to === 'home') goHome();
     else if (to === 'search') goSearch({ fresh:false });
     else if (to === 'settings') goSettings();
-    else if (to === 'friend-library') { state.view = 'friendLibrary'; render(); }
+    else if (to === 'people') openPeopleDirectory();
+    else if (to === 'public-library') { state.view = 'publicLibrary'; render(); }
   }));
   const emptySearchBtn = document.getElementById('empty-search-btn');
   if (emptySearchBtn) emptySearchBtn.addEventListener('click', goSearch);
@@ -2983,6 +2885,18 @@ function wireViewEvents(){
   main.querySelectorAll('[data-toggle-watched]').forEach(el => el.addEventListener('click', () => {
     toggleSeasonWatched(Number(el.getAttribute('data-toggle-watched')));
   }));
+  main.querySelectorAll('[data-toggle-companion-movie]').forEach(el => el.addEventListener('click', () => {
+    toggleCompanionMovie(Number(el.getAttribute('data-toggle-companion-movie')));
+  }));
+  main.querySelectorAll('[data-remove-companion-movie]').forEach(el => el.addEventListener('click', () => {
+    removeCompanionMovie(Number(el.getAttribute('data-remove-companion-movie')));
+  }));
+  const companionMovieInput = document.getElementById('companion-movie-input');
+  if (companionMovieInput) companionMovieInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); addCompanionMovie(); }
+  });
+  const addCompanionMovieBtn = main.querySelector('[data-add-companion-movie]');
+  if (addCompanionMovieBtn) addCompanionMovieBtn.addEventListener('click', addCompanionMovie);
   const addBtn = document.getElementById('add-anime-btn') || main.querySelector('[data-add-anime]');
   if (addBtn) addBtn.addEventListener('click', addPreviewToLibrary);
   const changeStatusBtn = main.querySelector('[data-change-status]');
@@ -3029,32 +2943,13 @@ function wireViewEvents(){
     importBtn.addEventListener('click', () => importFile.click());
     importFile.addEventListener('change', () => { if (importFile.files[0]) importLibrary(importFile.files[0]); importFile.value=''; });
   }
-  const openFriendsBtn = document.getElementById('open-friends-btn');
-  if (openFriendsBtn) openFriendsBtn.addEventListener('click', openFriendsSheet);
+  const openPeopleDirectoryBtn = document.getElementById('open-people-directory-btn');
+  if (openPeopleDirectoryBtn) openPeopleDirectoryBtn.addEventListener('click', openPeopleDirectory);
   const signOutBtn = document.getElementById('sign-out-btn');
   if (signOutBtn) signOutBtn.addEventListener('click', signOutUser);
 }
 
 document.getElementById('sheet').addEventListener('click', (e) => {
-  const openAddFriend = e.target.closest('[data-open-add-friend]');
-  if (openAddFriend) return openAddFriendSheet();
-  const backToFriends = e.target.closest('[data-back-to-friends]');
-  if (backToFriends) return backToFriendsSheet();
-  const submitCode = e.target.closest('[data-submit-friend-code]');
-  if (submitCode) return submitFriendCode();
-  const copyCode = e.target.closest('[data-copy-friend-code]');
-  if (copyCode) return copyFriendCode();
-  const acceptRequest = e.target.closest('[data-accept-friend-request]');
-  if (acceptRequest) return acceptFriendRequest(acceptRequest.getAttribute('data-accept-friend-request'));
-  const rejectRequest = e.target.closest('[data-reject-friend-request]');
-  if (rejectRequest) return rejectFriendRequest(rejectRequest.getAttribute('data-reject-friend-request'));
-  const cancelRequest = e.target.closest('[data-cancel-friend-request]');
-  if (cancelRequest) return cancelFriendRequest(cancelRequest.getAttribute('data-cancel-friend-request'));
-  const openFriend = e.target.closest('[data-open-friend-library]');
-  if (openFriend) return openFriendLibrary(openFriend.getAttribute('data-open-friend-library'));
-  const remove = e.target.closest('[data-remove-friend]');
-  if (remove) return removeFriend(remove.getAttribute('data-remove-friend'));
-
   const setStatus = e.target.closest('[data-set-status]');
   if (setStatus) return setAnimeStatus(setStatus.getAttribute('data-set-status'));
   const setRating = e.target.closest('[data-set-rating]');
@@ -3069,10 +2964,10 @@ document.getElementById('sheet').addEventListener('click', (e) => {
   if (e.target.id === 'confirm-delete') return deleteCurrentAnime();
 });
 
-function isFriendLibraryView(){ return state.view === 'friendLibrary' || state.view === 'friendDetail'; }
-document.getElementById('btn-search').addEventListener('click', () => { if (!isFriendLibraryView()) goSearch(); });
-document.getElementById('btn-settings').addEventListener('click', () => { if (!isFriendLibraryView()) goSettings(); });
-document.getElementById('btn-bell').addEventListener('click', () => { if (!isFriendLibraryView()) openNotifications(); });
+function isPublicLibraryView(){ return state.view === 'publicLibrary' || state.view === 'publicDetail'; }
+document.getElementById('btn-search').addEventListener('click', () => { if (!isPublicLibraryView()) goSearch(); });
+document.getElementById('btn-settings').addEventListener('click', () => { if (!isPublicLibraryView()) goSettings(); });
+document.getElementById('btn-bell').addEventListener('click', () => { if (!isPublicLibraryView()) openNotifications(); });
 
 /* =========================================================
    Boot
@@ -3097,5 +2992,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3c78f922c4c273a',t:'MTc4OTY0MjM0MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
